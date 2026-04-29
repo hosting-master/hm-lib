@@ -125,6 +125,15 @@ linters:
           # List of allowed packages.
           allow:
             - $gostd
+            - hostingmaster.io/**
+            - github.com/**
+            - golang.org/**
+            - google.golang.org/**
+            - go.mongodb.org/**
+            - gopkg.in/**
+            - helm.sh/**
+            - k8s.io/**
+            - sigs.k8s.io/**
           deny:
             - pkg: "math/rand$"
               desc: use math/rand/v2
