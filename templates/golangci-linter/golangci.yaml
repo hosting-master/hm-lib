@@ -116,37 +116,8 @@ linters:
     - wsl_v5
     - zerologlint
   settings:
-    depguard:
-      rules:
-        main:
-          list-mode: strict
-          files:
-            - "$all"
-          # List of allowed packages.
-          allow:
-            - $gostd
-            - hostingmaster.io/**
-            - github.com/**
-            - golang.org/**
-            - google.golang.org/**
-            - go.mongodb.org/**
-            - gopkg.in/**
-            - helm.sh/**
-            - k8s.io/**
-            - sigs.k8s.io/**
-          deny:
-            - pkg: "math/rand$"
-              desc: use math/rand/v2
-            - pkg: "github.com/sirupsen/logrus"
-              desc: not allowed
-            - pkg: "github.com/pkg/errors"
-              desc: Should be replaced by standard lib errors package
     gocyclo:
       min-complexity: 10
-    gomoddirectives:
-      replace-local: true
-      replace-allow-list:
-        - hostingmaster.io/hm-lib
     lll:
       line-length: 140
     revive:
@@ -158,7 +129,6 @@ linters:
                 - "github.com/onsi/ginkgo/v2"
                 - "github.com/onsi/gomega"
     tagalign:
-      # tagalign -fix -strict -sort -order "json,bson,mapstructure,format,enums,swaggertype,validate,default,example" ./...
       strict: true
       order:
         - json
@@ -177,13 +147,13 @@ linters:
     tagliatelle:
       case:
         use-field-name: true
-        rules:
-          json: camel
-          yaml: camel
-          bson: camel
-          xml: camel
-          avro: snake
-          mapstructure: kebab
+      rules:
+        json: camel
+        yaml: camel
+        bson: camel
+        xml: camel
+        avro: snake
+        mapstructure: kebab
     varnamelen:
       check-receiver: true
       check-return: true
@@ -226,6 +196,7 @@ linters:
       - third_party$
       - builtin$
       - examples$
+
 formatters:
   enable:
     - gci
@@ -242,9 +213,10 @@ formatters:
   settings:
     gofumpt:
       extra-rules: true
-
+    goimports:
+      local-prefixes:
+        - hostingmaster.io
     gci:
-      # gci Configuration for import ordering
       sections:
         - standard
         - prefix(github.com)
@@ -263,6 +235,7 @@ formatters:
       tab-len: 4
       shorten-comments: true
       reformat-tags: true
+
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
