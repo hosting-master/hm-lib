@@ -121,7 +121,7 @@ linters:
         main:
           list-mode: strict
           files:
-            - "!**/*_a _file.go"
+            - "$all"
           # List of allowed packages.
           allow:
             - $gostd
