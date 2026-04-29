@@ -1,0 +1,261 @@
+version: "2"
+
+run:
+  allow-parallel-runners: true
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+
+linters:
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - canonicalheader
+    - containedctx
+    - contextcheck
+    - copyloopvar
+    - cyclop
+    - decorder
+    - depguard
+    - dogsled
+    - dupl
+    - dupword
+    - durationcheck
+    - embeddedstructfieldcheck
+    - err113
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    - exptostd
+    - fatcontext
+    - forbidigo
+    - forcetypeassert
+    - funcorder
+    - funlen
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecknoglobals
+    - gochecknoinits
+    - gochecksumtype
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godoclint
+    - godot
+    - godox
+    - goheader
+    - gomoddirectives
+    - goprintffuncname
+    - gosec
+    - gosmopolitan
+    - govet
+    - grouper
+    - iface
+    - importas
+    - inamedparam
+    - ineffassign
+    - interfacebloat
+    - intrange
+    - iotamixing
+    - ireturn
+    - lll
+    - loggercheck
+    - maintidx
+    - makezero
+    - mirror
+    - misspell
+    - mnd
+    - modernize
+    - musttag
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - nlreturn
+    - noctx
+    - noinlineerr
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
+    - paralleltest
+    - perfsprint
+    - prealloc
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - recvcheck
+    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - tagalign
+    - tagliatelle
+    - testableexamples
+    - testifylint
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unqueryvet
+    - unused
+    - usestdlibvars
+    - usetesting
+    - varnamelen
+    - wastedassign
+    - whitespace
+    - wrapcheck
+    - wsl_v5
+    - zerologlint
+  settings:
+    depguard:
+      rules:
+        main:
+          list-mode: strict
+          files:
+            - "!**/*_a _file.go"
+          # List of allowed packages.
+          allow:
+            - $gostd
+          deny:
+            - pkg: "math/rand$"
+              desc: use math/rand/v2
+            - pkg: "github.com/sirupsen/logrus"
+              desc: not allowed
+            - pkg: "github.com/pkg/errors"
+              desc: Should be replaced by standard lib errors package
+    gocyclo:
+      min-complexity: 10
+    gomoddirectives:
+      replace-local: true
+      replace-allow-list:
+        - vigilprotector.io/vp-lib
+    lll:
+      line-length: 140
+    revive:
+      rules:
+        - name: dot-imports
+          severity: warning
+          arguments:
+            - allowed-packages:
+                - "github.com/onsi/ginkgo/v2"
+                - "github.com/onsi/gomega"
+    tagalign:
+      # tagalign -fix -strict -sort -order "json,bson,mapstructure,format,enums,swaggertype,validate,default,example" ./...
+      strict: true
+      order:
+        - json
+        - yaml
+        - bson
+        - xml
+        - mapstructure
+        - format
+        - enums
+        - swaggertype
+        - validate
+        - default
+        - example
+        - env
+        - envDefault
+    tagliatelle:
+      case:
+        use-field-name: true
+        rules:
+          json: camel
+          yaml: camel
+          bson: camel
+          xml: camel
+          avro: snake
+          mapstructure: kebab
+    varnamelen:
+      check-receiver: true
+      check-return: true
+      check-type-param: true
+      ignore-type-assert-ok: true
+      ignore-map-index-ok: true
+      ignore-chan-recv-ok: true
+      ignore-names:
+        - err
+        - i
+        - id
+        - tc
+        - ok
+        - v
+      ignore-decls:
+        - c *gin.Context
+        - c *Config
+        - c *Client
+        - e error
+        - g Gomega
+        - i int
+        - s *Store
+    whitespace:
+      multi-if: false
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - lll
+        path: api/*
+      - linters:
+          - dupl
+          - lll
+        path: internal/*
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+    - golines
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+  settings:
+    gofumpt:
+      extra-rules: true
+    goimports:
+      local-prefixes:
+        - vigilprotector.io
+    gci:
+      # gci write -s standard -s "Prefix(github.com)" -s "Prefix(golang.org)" -s "Prefix(google.golang.org)" -s "Prefix(go.mongodb.org)" -s "Prefix(go.uber.org)" -s "Prefix(gopkg.in)" -s "Prefix(helm.sh)" -s "Prefix(k8s.io)" -s "Prefix(sigs.k8s.io)" -s "Prefix(vigilprotector.io)" --custom-order .
+      sections:
+        - standard
+        - prefix(github.com)
+        - prefix(golang.org)
+        - prefix(google.golang.org)
+        - prefix(gopkg.in)
+        - prefix(go.mongodb.org)
+        - prefix(go.uber.org)
+        - prefix(helm.sh)
+        - prefix(k8s.io)
+        - prefix(sigs.k8s.io)
+        - prefix(vigilprotector.io)
+      custom-order: true
+    golines:
+      max-len: 140
+      tab-len: 4
+      shorten-comments: true
+      reformat-tags: true
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
