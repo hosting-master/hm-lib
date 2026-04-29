@@ -137,7 +137,7 @@ linters:
     gomoddirectives:
       replace-local: true
       replace-allow-list:
-        - vigilprotector.io/vp-lib
+        - hostingmaster.io/hm-lib
     lll:
       line-length: 140
     revive:
@@ -235,9 +235,9 @@ formatters:
       extra-rules: true
     goimports:
       local-prefixes:
-        - vigilprotector.io
+        - hostingmaster.io
     gci:
-      # gci write -s standard -s "Prefix(github.com)" -s "Prefix(golang.org)" -s "Prefix(google.golang.org)" -s "Prefix(go.mongodb.org)" -s "Prefix(go.uber.org)" -s "Prefix(gopkg.in)" -s "Prefix(helm.sh)" -s "Prefix(k8s.io)" -s "Prefix(sigs.k8s.io)" -s "Prefix(vigilprotector.io)" --custom-order .
+      # gci write -s standard -s "Prefix(github.com)" -s "Prefix(golang.org)" -s "Prefix(google.golang.org)" -s "Prefix(go.mongodb.org)" -s "Prefix(go.uber.org)" -s "Prefix(gopkg.in)" -s "Prefix(helm.sh)" -s "Prefix(k8s.io)" -s "Prefix(sigs.k8s.io)" -s "Prefix(hostingmaster.io)" --custom-order .
       sections:
         - standard
         - prefix(github.com)
@@ -249,7 +249,7 @@ formatters:
         - prefix(helm.sh)
         - prefix(k8s.io)
         - prefix(sigs.k8s.io)
-        - prefix(vigilprotector.io)
+        - prefix(hostingmaster.io)
       custom-order: true
     golines:
       max-len: 140
