@@ -127,18 +127,15 @@ linters:
             - "$all"
           allow:
             - $gostd
-            - hostingmaster.io/tenant-service
-            - hostingmaster.io/tenant-service/**
-            - hostingmaster.io/hm-lib
-            - hostingmaster.io/hm-lib/**
-            - github.com/redis/go-redis
-            - github.com/redis/go-redis/**
-            - go.mongodb.org/mongo-driver
-            - go.mongodb.org/mongo-driver/**
-            - google.golang.org/grpc
-            - google.golang.org/grpc/**
-            - google.golang.org/protobuf
-            - google.golang.org/protobuf/**
+            - hostingmaster.io/
+            - github.com/
+            - golang.org/
+            - google.golang.org/
+            - go.mongodb.org/
+            - gopkg.in/
+            - helm.sh/
+            - k8s.io/
+            - sigs.k8s.io/
           deny:
             - pkg: "math/rand$"
               desc: use math/rand/v2
