@@ -233,11 +233,9 @@ formatters:
   settings:
     gofumpt:
       extra-rules: true
-    goimports:
-      local-prefixes:
-        - hostingmaster.io
+
     gci:
-      # gci write -s standard -s "Prefix(github.com)" -s "Prefix(golang.org)" -s "Prefix(google.golang.org)" -s "Prefix(go.mongodb.org)" -s "Prefix(go.uber.org)" -s "Prefix(gopkg.in)" -s "Prefix(helm.sh)" -s "Prefix(k8s.io)" -s "Prefix(sigs.k8s.io)" -s "Prefix(hostingmaster.io)" --custom-order .
+      # gci Configuration for import ordering
       sections:
         - standard
         - prefix(github.com)
