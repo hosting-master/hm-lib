@@ -88,7 +88,7 @@ linters:
     - prealloc
     - predeclared
     - promlinter
-
+    - protogetter
     - reassign
     - recvcheck
     - revive
@@ -116,33 +116,15 @@ linters:
     - wsl_v5
     - zerologlint
   settings:
-    gocyclo:
-      min-complexity: 10
-    lll:
-      line-length: 140
     depguard:
       rules:
         main:
+          list-mode: strict
           files:
-            - "$all"
+            - "!**/*_a _file.go"
+          # List of allowed packages.
           allow:
             - $gostd
-            - hostingmaster.io/tenant-service
-            - hostingmaster.io/tenant-service/internal/repository
-            - hostingmaster.io/tenant-service/internal/service
-            - hostingmaster.io/tenant-service/pkg/models
-            - hostingmaster.io/tenant-service/protos/tenant/v1
-            - hostingmaster.io/hm-lib
-            - github.com/grpc-ecosystem/grpc-gateway/v2
-            - github.com/redis/go-redis/v9
-            - go.mongodb.org/mongo-driver
-            - go.mongodb.org/mongo-driver/bson
-            - go.mongodb.org/mongo-driver/bson/primitive
-            - go.mongodb.org/mongo-driver/mongo
-            - go.mongodb.org/mongo-driver/mongo/options
-            - google.golang.org/grpc
-            - google.golang.org/grpc/reflection
-            - google.golang.org/protobuf
           deny:
             - pkg: "math/rand$"
               desc: use math/rand/v2
@@ -150,6 +132,14 @@ linters:
               desc: not allowed
             - pkg: "github.com/pkg/errors"
               desc: Should be replaced by standard lib errors package
+    gocyclo:
+      min-complexity: 10
+    gomoddirectives:
+      replace-local: true
+      replace-allow-list:
+        - hostingmaster.io/vp-lib
+    lll:
+      line-length: 140
     revive:
       rules:
         - name: dot-imports
@@ -159,6 +149,7 @@ linters:
                 - "github.com/onsi/ginkgo/v2"
                 - "github.com/onsi/gomega"
     tagalign:
+      # tagalign -fix -strict -sort -order "json,bson,mapstructure,format,enums,swaggertype,validate,default,example" ./...
       strict: true
       order:
         - json
@@ -177,12 +168,13 @@ linters:
     tagliatelle:
       case:
         use-field-name: true
-        json: camel
-        yaml: camel
-        bson: camel
-        xml: camel
-        avro: snake
-        mapstructure: kebab
+        rules:
+          json: camel
+          yaml: camel
+          bson: camel
+          xml: camel
+          avro: snake
+          mapstructure: kebab
     varnamelen:
       check-receiver: true
       check-return: true
@@ -225,7 +217,6 @@ linters:
       - third_party$
       - builtin$
       - examples$
-
 formatters:
   enable:
     - gci
@@ -246,6 +237,7 @@ formatters:
       local-prefixes:
         - hostingmaster.io
     gci:
+      # gci write -s standard -s "Prefix(github.com)" -s "Prefix(golang.org)" -s "Prefix(google.golang.org)" -s "Prefix(go.mongodb.org)" -s "Prefix(go.uber.org)" -s "Prefix(gopkg.in)" -s "Prefix(helm.sh)" -s "Prefix(k8s.io)" -s "Prefix(sigs.k8s.io)" -s "Prefix(hostingmaster.io)" --custom-order .
       sections:
         - standard
         - prefix(github.com)
@@ -264,7 +256,6 @@ formatters:
       tab-len: 4
       shorten-comments: true
       reformat-tags: true
-
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
