@@ -88,7 +88,7 @@ linters:
     - prealloc
     - predeclared
     - promlinter
-    - protogetter
+
     - reassign
     - recvcheck
     - revive
@@ -177,7 +177,6 @@ linters:
     tagliatelle:
       case:
         use-field-name: true
-      rules:
         json: camel
         yaml: camel
         bson: camel
