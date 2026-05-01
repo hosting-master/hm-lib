@@ -9,7 +9,6 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -83,6 +82,7 @@ func WithAudience(audience string) RS256ValidatorOption {
 // The public key should be loaded from Kubernetes Secrets by the consuming service.
 // See ADR-0012 for key management details.
 // Use WithIssuer and WithAudience options to enable issuer/audience validation.
+// Uses jwt.NewParser with WithValidMethods for proper signing method validation.
 func NewRS256Validator(publicKey *rsa.PublicKey, opts ...RS256ValidatorOption) *RS256Validator {
 	v := &RS256Validator{publicKey: publicKey}
 	for _, opt := range opts {
@@ -94,15 +94,8 @@ func NewRS256Validator(publicKey *rsa.PublicKey, opts ...RS256ValidatorOption) *
 
 // ValidateToken validates a JWT token signed with RS256.
 func (v *RS256Validator) ValidateToken(token string) (*Claims, error) {
-	// Parse token with validation
-	tokenObj, err := jwt.ParseWithClaims(token, &Claims{}, func(t *jwt.Token) (any, error) {
-		// Verify signing method - ADR-0012 requires exactly RS256
-		if t.Method.Alg() != jwt.SigningMethodRS256.Alg() {
-			return nil, ErrInvalidToken
-		}
-
-		return v.publicKey, nil
-	})
+	// Parse token with validation - uses jwt.Parser with configured options
+	tokenObj, err := v.parseWithValidation(token, &Claims{})
 	if err != nil {
 		return v.handleJWTError(err)
 	}
@@ -116,8 +109,34 @@ func (v *RS256Validator) ValidateToken(token string) (*Claims, error) {
 		return nil, ErrInvalidToken
 	}
 
-	// Validate issuer and audience if configured
-	return v.validateClaims(claims)
+	return claims, nil
+}
+
+// parseWithValidation parses and validates a token using the configured parser options.
+func (v *RS256Validator) parseWithValidation(token string, claims jwt.Claims) (*jwt.Token, error) {
+	// Build parser options based on configured values
+	options := []jwt.ParserOption{
+		jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Alg()}),
+	}
+
+	if v.issuer != "" {
+		options = append(options, jwt.WithIssuer(v.issuer))
+	}
+
+	if v.audience != "" {
+		options = append(options, jwt.WithAudience(v.audience))
+	}
+
+	parser := jwt.NewParser(options...)
+
+	tokenObj, err := parser.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
+		return v.publicKey, nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token: %w", err)
+	}
+
+	return tokenObj, nil
 }
 
 // handleJWTError handles JWT library errors and maps them to our error types.
@@ -131,21 +150,6 @@ func (v *RS256Validator) handleJWTError(err error) (*Claims, error) {
 	}
 
 	return nil, ErrInvalidToken
-}
-
-// validateClaims validates issuer and audience claims if configured.
-func (v *RS256Validator) validateClaims(claims *Claims) (*Claims, error) {
-	// Validate issuer if configured
-	if v.issuer != "" && claims.Issuer != v.issuer {
-		return nil, ErrInvalidToken
-	}
-
-	// Validate audience if configured
-	if v.audience != "" && !slices.Contains(claims.Audience, v.audience) {
-		return nil, ErrInvalidToken
-	}
-
-	return claims, nil
 }
 
 // ParsePublicKeyFromPEM parses an RSA public key from PEM-encoded data.

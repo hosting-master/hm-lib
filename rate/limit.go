@@ -85,8 +85,8 @@ func (l *InMemoryLimiter) Allow(key string) bool {
 
 // Remaining implements Limiter interface.
 func (l *InMemoryLimiter) Remaining(key string) int {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
 	l.cleanup()
 
@@ -100,8 +100,8 @@ func (l *InMemoryLimiter) Remaining(key string) int {
 
 // ResetAt implements Limiter interface.
 func (l *InMemoryLimiter) ResetAt(key string) time.Time {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
 	vis, exists := l.visitors[key]
 	if !exists {
@@ -145,7 +145,7 @@ const (
 //
 //nolint:gochecknoglobals // Package-level constants for rate limiting configuration
 var (
-	// LoginLimit: 5 attempts per minute per IP/username.
+	// LoginLimit: 5 attempts per 15 minutes per IP/username.
 	LoginLimit = Limit{Requests: loginLimitRequests, Window: loginLimitWindow}
 	// APILimit: 100 requests per minute per tenant.
 	APILimit = Limit{Requests: apiLimitRequests, Window: apiLimitWindow}

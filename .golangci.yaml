@@ -1,11 +1,9 @@
 version: "2"
-
 run:
   allow-parallel-runners: true
   timeout: 5m
   issues-exit-code: 1
   tests: true
-
 linters:
   enable:
     - asasalint
@@ -100,6 +98,7 @@ linters:
     - tagalign
     - tagliatelle
     - testableexamples
+    - testifylint
     - thelper
     - tparallel
     - unconvert
@@ -114,73 +113,33 @@ linters:
     - wrapcheck
     - wsl_v5
     - zerologlint
-
   settings:
     depguard:
       rules:
         main:
+          list-mode: strict
           files:
-            - "$all"
+            - "!**/*_a _file.go"
+          # List of allowed packages.
           allow:
             - $gostd
-            - "cel.dev/expr"
-            - "cloud.google.com/go/compute/metadata"
-            - "github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
-            - "github.com/cespare/xxhash/v2"
-            - "github.com/cncf/xds/go"
-            - "github.com/envoyproxy/go-control-plane"
-            - "github.com/envoyproxy/go-control-plane/envoy"
-            - "github.com/envoyproxy/go-control-plane/ratelimit"
-            - "github.com/envoyproxy/protoc-gen-validate"
-            - "github.com/go-jose/go-jose/v4"
-            - "github.com/go-logr/logr"
-            - "github.com/go-logr/stdr"
-            - "github.com/golang-jwt/jwt/v5"
-            - "github.com/golang/glog"
-            - "github.com/golang/protobuf"
-            - "github.com/google/go-cmp"
-            - "github.com/google/uuid"
-            - "github.com/prometheus/client_golang"
-            - "github.com/prometheus/client_model"
-            - "github.com/prometheus/common"
-            - "github.com/prometheus/procfs"
-            - "github.com/planetscale/vtprotobuf"
-            - "github.com/spiffe/go-spiffe/v2"
-            - "go.opentelemetry.io/auto/sdk"
-            - "go.opentelemetry.io/contrib/detectors/gcp"
-            - "go.opentelemetry.io/otel"
-            - "go.opentelemetry.io/otel/metric"
-            - "go.opentelemetry.io/otel/sdk"
-            - "go.opentelemetry.io/otel/sdk/metric"
-            - "go.opentelemetry.io/otel/trace"
-            - "golang.org/x/crypto"
-            - "golang.org/x/crypto/bcrypt"
-            - "golang.org/x/mod"
-            - "golang.org/x/net"
-            - "golang.org/x/oauth2"
-            - "golang.org/x/sync"
-            - "golang.org/x/sys"
-            - "golang.org/x/term"
-            - "golang.org/x/text"
-            - "golang.org/x/tools"
-            - "gonum.org/v1/gonum"
-            - "google.golang.org/genproto"
-            - "google.golang.org/genproto/googleapis/api"
-            - "google.golang.org/genproto/googleapis/rpc"
-            - "google.golang.org/grpc"
-            - "google.golang.org/grpc/codes"
-            - "google.golang.org/grpc/metadata"
-            - "google.golang.org/grpc/status"
-            - "google.golang.org/protobuf"
-            - "hostingmaster.io/hm-lib"
-            - "hostingmaster.io/hm-lib/audit"
-            - "hostingmaster.io/hm-lib/crypto"
-            - "hostingmaster.io/hm-lib/grpc"
-            - "hostingmaster.io/hm-lib/jwt"
-            - "hostingmaster.io/hm-lib/rate"
-            - "hostingmaster.io/hm-lib/ratelimit"
-            - "hostingmaster.io/hm-lib/templates"
-            - "hostingmaster.io/hm-lib/tenants"
+            - github.com/golang-jwt/jwt/v5
+            - github.com/stretchr/testify
+            - github.com/stretchr/testify/assert
+            - github.com/stretchr/testify/require
+            - golang.org/x/crypto/bcrypt
+            - golang.org/x/exp/slices
+            - google.golang.org/grpc
+            - google.golang.org/grpc/codes
+            - google.golang.org/grpc/metadata
+            - google.golang.org/grpc/status
+            - hostingmaster.io/hm-lib
+            - hostingmaster.io/hm-lib/audit
+            - hostingmaster.io/hm-lib/crypto
+            - hostingmaster.io/hm-lib/grpc
+            - hostingmaster.io/hm-lib/jwt
+            - hostingmaster.io/hm-lib/rate
+            - hostingmaster.io/hm-lib/tenants
           deny:
             - pkg: "math/rand$"
               desc: use math/rand/v2
@@ -205,6 +164,7 @@ linters:
                 - "github.com/onsi/ginkgo/v2"
                 - "github.com/onsi/gomega"
     tagalign:
+      # tagalign -fix -strict -sort -order "json,bson,mapstructure,format,enums,swaggertype,validate,default,example" ./...
       strict: true
       order:
         - json
@@ -244,11 +204,11 @@ linters:
         - tc
         - ok
         - v
+        - c
+        - kb
         - l
         - n
         - s
-        - kb
-        - c
       ignore-decls:
         - c *gin.Context
         - c *Config
@@ -263,7 +223,20 @@ linters:
       allow-first-in-block: true
       allow-whole-block: false
       branch-max-lines: 2
-
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - lll
+        path: api/*
+      - linters:
+          - dupl
+          - lll
+        path: internal/*
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 formatters:
   enable:
     - gci
@@ -271,6 +244,12 @@ formatters:
     - gofumpt
     - goimports
     - golines
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
   settings:
     gofumpt:
       extra-rules: true
@@ -278,6 +257,7 @@ formatters:
       local-prefixes:
         - hostingmaster.io
     gci:
+      # gci write -s standard -s "Prefix(github.com)" -s "Prefix(golang.org)" -s "Prefix(google.golang.org)" -s "Prefix(go.mongodb.org)" -s "Prefix(go.uber.org)" -s "Prefix(gopkg.in)" -s "Prefix(helm.sh)" -s "Prefix(k8s.io)" -s "Prefix(sigs.k8s.io)" -s "Prefix(hostingmaster.io)" --custom-order .
       sections:
         - standard
         - prefix(github.com)
@@ -296,7 +276,6 @@ formatters:
       tab-len: 4
       shorten-comments: true
       reformat-tags: true
-
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

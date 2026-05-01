@@ -64,8 +64,8 @@ func CheckPasswordHash(password, hash string) error {
 // - At least 1 uppercase letter
 // - At least 1 lowercase letter
 // - At least 1 digit
-// - At least 1 special character (!@#$%^&* etc.)
-// - Only alphanumeric and common special characters allowed.
+// - At least 1 special character
+// - Any Unicode characters except null bytes allowed.
 func ValidatePasswordStrength(password string) error {
 	if len(password) < DefaultPasswordMinLength {
 		return ErrPasswordTooShort
@@ -87,11 +87,21 @@ func ValidatePasswordStrength(password string) error {
 		return ErrPasswordMissingSpecial
 	}
 
-	if !validCharacters(password) {
+	if containsNullByte(password) {
 		return ErrPasswordContainsNullByte
 	}
 
 	return nil
+}
+
+func containsNullByte(s string) bool {
+	for _, c := range s {
+		if c == '\x00' {
+			return true
+		}
+	}
+
+	return false
 }
 
 func hasUppercase(s string) bool {
@@ -132,15 +142,4 @@ func hasSpecial(s string) bool {
 	}
 
 	return false
-}
-
-func validCharacters(s string) bool {
-	// Check for null bytes which are never allowed
-	for _, c := range s {
-		if c == '\x00' {
-			return false
-		}
-	}
-
-	return true
 }
