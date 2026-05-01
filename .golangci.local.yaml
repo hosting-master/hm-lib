@@ -67,3 +67,5 @@ linters:
     varnamelen:
       ignore-decls:
         - "v jwt.Validator"
+      ignore-names:
+        - "^[a-z]$"
