@@ -125,25 +125,6 @@ linters:
           # List of allowed packages.
           allow:
             - $gostd
-            # gRPC
-            - google.golang.org/grpc
-            - google.golang.org/grpc/codes
-            - google.golang.org/grpc/metadata
-            - google.golang.org/grpc/status
-            - google.golang.org/genproto/**
-            - google.golang.org/protobuf
-            - github.com/prometheus/client_golang
-            - github.com/prometheus/client_model
-            - github.com/prometheus/common
-            - github.com/prometheus/procfs
-            # JWT
-            - github.com/golang-jwt/jwt/v5
-            # Crypto
-            - golang.org/x/crypto
-            - golang.org/x/crypto/bcrypt
-            # HostingMaster internal packages
-            - hostingmaster.io/hm-lib
-            - hostingmaster.io/hm-lib/**
           deny:
             - pkg: "math/rand$"
               desc: use math/rand/v2
@@ -151,15 +132,12 @@ linters:
               desc: not allowed
             - pkg: "github.com/pkg/errors"
               desc: Should be replaced by standard lib errors package
-    funlen:
-      lines: 80
-      min-complexity: 10
     gocyclo:
       min-complexity: 10
     gomoddirectives:
       replace-local: true
       replace-allow-list:
-        - hostingmaster.io/vp-lib
+        - hostingmaster.io/hm-lib
     lll:
       line-length: 140
     revive:
@@ -235,15 +213,6 @@ linters:
           - dupl
           - lll
         path: internal/*
-      - linters:
-          - containedctx
-        path: grpc/*
-      - linters:
-          - funlen
-        path: crypto/password_test.go
-      - linters:
-          - funlen
-        path: grpc/interceptors_test.go
     paths:
       - third_party$
       - builtin$
