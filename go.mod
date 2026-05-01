@@ -1,6 +1,6 @@
 module hostingmaster.io/hm-lib
 
-go 1.0.0
+go 1.26
 
 require google.golang.org/grpc v1.64.0
 
