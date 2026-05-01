@@ -95,6 +95,6 @@ type tenantAwareServerStream struct {
 }
 
 // Context returns the updated context with tenant ID.
-func (stream *tenantAwareServerStream) Context() context.Context {
-	return stream.ctx
+func (s *tenantAwareServerStream) Context() context.Context {
+	return s.ctx
 }

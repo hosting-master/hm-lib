@@ -58,17 +58,17 @@ func NewInMemoryLimiter(requests int, window time.Duration) *InMemoryLimiter {
 }
 
 // Allow implements Limiter interface.
-func (limiter *InMemoryLimiter) Allow(key string) bool {
-	limiter.cleanup()
+func (l *InMemoryLimiter) Allow(key string) bool {
+	l.cleanup()
 
-	vis, exists := limiter.visitors[key]
+	vis, exists := l.visitors[key]
 	if !exists || time.Now().After(vis.expiresAt) {
-		limiter.visitors[key] = &visitor{count: 1, expiresAt: time.Now().Add(limiter.limit.Window)}
+		l.visitors[key] = &visitor{count: 1, expiresAt: time.Now().Add(l.limit.Window)}
 
 		return true
 	}
 
-	if vis.count < limiter.limit.Requests {
+	if vis.count < l.limit.Requests {
 		vis.count++
 
 		return true
@@ -78,37 +78,37 @@ func (limiter *InMemoryLimiter) Allow(key string) bool {
 }
 
 // Remaining implements Limiter interface.
-func (limiter *InMemoryLimiter) Remaining(key string) int {
-	limiter.cleanup()
+func (l *InMemoryLimiter) Remaining(key string) int {
+	l.cleanup()
 
-	vis, exists := limiter.visitors[key]
+	vis, exists := l.visitors[key]
 	if !exists || time.Now().After(vis.expiresAt) {
-		return limiter.limit.Requests
+		return l.limit.Requests
 	}
 
-	return limiter.limit.Requests - vis.count
+	return l.limit.Requests - vis.count
 }
 
 // ResetAt implements Limiter interface.
-func (limiter *InMemoryLimiter) ResetAt(key string) time.Time {
-	vis, exists := limiter.visitors[key]
+func (l *InMemoryLimiter) ResetAt(key string) time.Time {
+	vis, exists := l.visitors[key]
 	if !exists {
-		return time.Now().Add(limiter.limit.Window)
+		return time.Now().Add(l.limit.Window)
 	}
 
 	return vis.expiresAt
 }
 
 // Limit implements Limiter interface.
-func (limiter *InMemoryLimiter) Limit() Limit {
-	return limiter.limit
+func (l *InMemoryLimiter) Limit() Limit {
+	return l.limit
 }
 
 // cleanup removes expired visitors to prevent memory leaks.
-func (limiter *InMemoryLimiter) cleanup() {
-	for key, vis := range limiter.visitors {
+func (l *InMemoryLimiter) cleanup() {
+	for key, vis := range l.visitors {
 		if time.Now().After(vis.expiresAt) {
-			delete(limiter.visitors, key)
+			delete(l.visitors, key)
 		}
 	}
 }

@@ -109,8 +109,8 @@ type tenantAwareStream struct {
 }
 
 // Context returns the context with tenant ID.
-func (ss *tenantAwareStream) Context() context.Context {
-	return ss.ctx
+func (s *tenantAwareStream) Context() context.Context {
+	return s.ctx
 }
 
 // UnaryAuthInterceptorWithTenantOnly returns a simpler interceptor that only sets tenant context
