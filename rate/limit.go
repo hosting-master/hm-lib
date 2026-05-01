@@ -102,14 +102,15 @@ func (l *InMemoryLimiter) cleanup() {
 }
 
 // Common rate limit presets for HostingMaster services.
+//nolint:gochecknoglobals // Package-level constants for rate limiting configuration
 var (
-	// LoginLimit: 5 attempts per minute per IP/username
+	// LoginLimit: 5 attempts per minute per IP/username.
 	LoginLimit = Limit{Requests: 5, Window: 1 * time.Minute}
-	// APILimit: 100 requests per minute per tenant
+	// APILimit: 100 requests per minute per tenant.
 	APILimit = Limit{Requests: 100, Window: 1 * time.Minute}
-	// PasswordResetLimit: 3 attempts per hour per user
+	// PasswordResetLimit: 3 attempts per hour per user.
 	PasswordResetLimit = Limit{Requests: 3, Window: 1 * time.Hour}
-	// TokenRefreshLimit: 10 refreshes per minute per user
+	// TokenRefreshLimit: 10 refreshes per minute per user.
 	TokenRefreshLimit = Limit{Requests: 10, Window: 1 * time.Minute}
 )
 

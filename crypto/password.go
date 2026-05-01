@@ -4,29 +4,29 @@
 package crypto
 
 import (
-	"errors"
+	"fmt"
 	"regexp"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 // ErrPasswordTooShort is returned when password is shorter than minimum length.
-var ErrPasswordTooShort = errors.New("password too short")
+var ErrPasswordTooShort = fmt.Errorf("password too short")
 
 // ErrPasswordMissingUppercase is returned when password is missing uppercase letters.
-var ErrPasswordMissingUppercase = errors.New("password missing uppercase letter")
+var ErrPasswordMissingUppercase = fmt.Errorf("password missing uppercase letter")
 
 // ErrPasswordMissingLowercase is returned when password is missing lowercase letters.
-var ErrPasswordMissingLowercase = errors.New("password missing lowercase letter")
+var ErrPasswordMissingLowercase = fmt.Errorf("password missing lowercase letter")
 
 // ErrPasswordMissingDigit is returned when password is missing digits.
-var ErrPasswordMissingDigit = errors.New("password missing digit")
+var ErrPasswordMissingDigit = fmt.Errorf("password missing digit")
 
 // ErrPasswordMissingSpecial is returned when password is missing special characters.
-var ErrPasswordMissingSpecial = errors.New("password missing special character")
+var ErrPasswordMissingSpecial = fmt.Errorf("password missing special character")
 
 // ErrPasswordInvalidCharacters is returned when password contains invalid characters.
-var ErrPasswordInvalidCharacters = errors.New("password contains invalid characters")
+var ErrPasswordInvalidCharacters = fmt.Errorf("password contains invalid characters")
 
 // DefaultBcryptCost is the minimum cost factor for bcrypt as per ADR-0012.
 // Cost of 12 means 2^12 iterations (4096), which is the recommended minimum.
@@ -55,7 +55,7 @@ func CheckPasswordHash(password, hash string) error {
 // - At least 1 lowercase letter
 // - At least 1 digit
 // - At least 1 special character (!@#$%^&* etc.)
-// - Only alphanumeric and common special characters allowed
+// - Only alphanumeric and common special characters allowed.
 func ValidatePasswordStrength(password string) error {
 	if len(password) < 12 {
 		return ErrPasswordTooShort

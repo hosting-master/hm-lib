@@ -89,6 +89,7 @@ func StreamTenantInterceptor() grpc.StreamServerInterceptor {
 // tenantAwareServerStream wraps ServerStream to provide context with tenant ID.
 type tenantAwareServerStream struct {
 	grpc.ServerStream
+
 	ctx context.Context
 }
 

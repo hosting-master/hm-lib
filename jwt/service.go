@@ -26,6 +26,7 @@ var ErrTokenNotYetValid = errors.New("token is not yet valid")
 type Claims struct {
 	// Standard claims
 	jwt.RegisteredClaims
+
 	// HostingMaster specific claims
 	UserID   string   `json:"sub,omitempty"` // Subject (user ID)
 	Username string   `json:"username,omitempty"`

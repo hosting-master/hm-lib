@@ -102,6 +102,7 @@ func extractTokenFromMetadata(ctx context.Context) (string, error) {
 // This is used by StreamAuthInterceptor to propagate tenant context.
 type tenantAwareStream struct {
 	grpc.ServerStream
+
 	ctx context.Context
 }
 

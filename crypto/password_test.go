@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -114,31 +115,11 @@ func TestValidatePasswordStrength(t *testing.T) {
 			if tt.wantErr != nil && err == nil {
 				t.Errorf("ValidatePasswordStrength() error = nil, wantErr %v", tt.wantErr)
 			}
-			if tt.wantErr != nil && err != nil && err != tt.wantErr {
-				// Check if it's one of the expected error types
-				if !errorMatches(err, tt.wantErr) {
-					t.Errorf("ValidatePasswordStrength() error = %v, wantErr %v", err, tt.wantErr)
-				}
+			if tt.wantErr != nil && err != nil && !errors.Is(err, tt.wantErr) {
+				t.Errorf("ValidatePasswordStrength() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
-}
-
-func errorMatches(err, target error) bool {
-	if err == target {
-		return true
-	}
-	switch target {
-	case ErrPasswordTooShort,
-		ErrPasswordMissingUppercase,
-		ErrPasswordMissingLowercase,
-		ErrPasswordMissingDigit,
-		ErrPasswordMissingSpecial,
-		ErrPasswordInvalidCharacters:
-		// These are the only error types we return
-		return true
-	}
-	return false
 }
 
 func TestBcryptCost(t *testing.T) {

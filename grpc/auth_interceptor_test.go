@@ -18,7 +18,7 @@ import (
 	"hostingmaster.io/hm-lib/tenants"
 )
 
-// mockValidator is a test implementation of jwt.Validator
+// mockValidator is a test implementation of jwt.Validator.
 type mockValidator struct {
 	validToken  string
 	validClaims *jwt.Claims
