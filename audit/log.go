@@ -6,7 +6,12 @@ package audit
 
 import (
 	"context"
+	"net"
+	"strings"
 	"time"
+
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 )
 
 // Action represents the type of action being audited.
@@ -120,4 +125,85 @@ func FromContext(ctx context.Context) Logger {
 	}
 
 	return &NoOpLogger{}
+}
+
+// ExtractClientInfo extracts IP address and User-Agent from gRPC context.
+// It uses gRPC peer information for IP and metadata for User-Agent.
+// Returns IP, User-Agent, and error if extraction fails.
+func ExtractClientInfo(ctx context.Context) (string, string, error) {
+	var ipAddress, userAgent string
+
+	// Extract IP from peer address
+	p, ok := peer.FromContext(ctx)
+	if ok && p.Addr != nil {
+		addr := p.Addr.String()
+
+		host, _, err := net.SplitHostPort(addr)
+		if err == nil {
+			ipAddress = host
+		} else if ip := net.ParseIP(addr); ip != nil {
+			ipAddress = ip.String()
+		} else {
+			ipAddress = addr // Fallback to raw address
+		}
+	}
+
+	// Extract User-Agent from metadata
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		userAgents := md.Get("user-agent")
+		if len(userAgents) > 0 {
+			userAgent = userAgents[0]
+		}
+	}
+
+	return ipAddress, userAgent, nil
+}
+
+// SanitizeDetails removes potentially sensitive information from audit log details.
+// This prevents PII leaks in audit logs (e.g., passwords, tokens, credit card numbers).
+// The function modifies the map in place.
+func SanitizeDetails(details map[string]any) {
+	if details == nil {
+		return
+	}
+
+	// Keys that should never appear in audit logs
+	sensitiveKeys := []string{
+		"password",
+		"password_hash",
+		"passwordhash",
+		"token",
+		"access_token",
+		"refresh_token",
+		"api_key",
+		"apikey",
+		"secret",
+		"credit_card",
+		"creditcard",
+		"cc_number",
+		"authorization",
+		"auth",
+		"cookie",
+		"set-cookie",
+		"private_key",
+		"privatekey",
+	}
+
+	// Collect all keys to delete (including case-insensitive matches)
+	keysToDelete := make(map[string]bool)
+	for _, sensitiveKey := range sensitiveKeys {
+		keysToDelete[sensitiveKey] = true
+		// Collect case-insensitive matches
+		for k := range details {
+			if strings.EqualFold(k, sensitiveKey) {
+				keysToDelete[k] = true
+			}
+		}
+	}
+
+	// Delete all sensitive keys
+	for k := range keysToDelete {
+		delete(details, k)
+	}
 }

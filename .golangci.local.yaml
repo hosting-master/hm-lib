@@ -13,6 +13,7 @@ linters:
             - google.golang.org/grpc
             - google.golang.org/grpc/codes
             - google.golang.org/grpc/metadata
+            - google.golang.org/grpc/peer
             - google.golang.org/grpc/status
             - hostingmaster.io/hm-lib
             - hostingmaster.io/hm-lib/audit

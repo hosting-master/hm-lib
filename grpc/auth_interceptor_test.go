@@ -88,6 +88,44 @@ func TestAuthInterceptor_ValidToken(t *testing.T) {
 	}
 }
 
+// TestAuthInterceptor_EmptyTenantIDInJWT verifies that Phase 1 behavior is maintained:
+// JWT with empty TenantID in claims is still accepted, as tenant is managed separately.
+// This regressions-test ensures that a future refactor accidentally re-adding tenant.WithTenant(ctx, claims.TenantID)
+// would be caught by this test failing.
+func TestAuthInterceptor_EmptyTenantIDInJWT(t *testing.T) {
+	t.Parallel()
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate key: %v", err)
+	}
+
+	// Create claims with empty TenantID - Phase 1 should accept this
+	claims := jwt.Claims{
+		RegisteredClaims: jwtx.RegisteredClaims{
+			ExpiresAt: jwtx.NewNumericDate(time.Now().Add(1 * time.Hour)),
+			Subject:   "user-123",
+		},
+		TenantID: "", // Empty - should NOT cause rejection
+	}
+
+	token := generateTestTokenWithClaims(privateKey, claims)
+	validator := jwt.NewRS256Validator(&privateKey.PublicKey)
+
+	// Setup interceptor and context
+	interceptor := AuthInterceptor(validator)
+	md := metadata.Pairs("authorization", "Bearer "+token)
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+
+	// Call interceptor with simple handler
+	_, err = interceptor(ctx, nil, &grpc.UnaryServerInfo{}, func(_ context.Context, _ any) (any, error) {
+		return successResult, nil
+	})
+	if err != nil {
+		t.Errorf("AuthInterceptor() should accept JWT with empty TenantID in Phase 1, got error = %v", err)
+	}
+}
+
 func TestAuthInterceptor_MissingToken(t *testing.T) {
 	t.Parallel()
 
