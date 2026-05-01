@@ -1,0 +1,30 @@
+linters:
+  settings:
+    depguard:
+      rules:
+        main:
+          allow:
+            - github.com/golang-jwt/jwt/v5
+            - github.com/stretchr/testify
+            - github.com/stretchr/testify/assert
+            - github.com/stretchr/testify/require
+            - golang.org/x/crypto/bcrypt
+            - golang.org/x/exp/slices
+            - google.golang.org/grpc
+            - google.golang.org/grpc/codes
+            - google.golang.org/grpc/metadata
+            - google.golang.org/grpc/status
+            - hostingmaster.io/hm-lib
+            - hostingmaster.io/hm-lib/audit
+            - hostingmaster.io/hm-lib/crypto
+            - hostingmaster.io/hm-lib/grpc
+            - hostingmaster.io/hm-lib/jwt
+            - hostingmaster.io/hm-lib/rate
+            - hostingmaster.io/hm-lib/tenants
+    varnamelen:
+      ignore-names:
+        - c
+        - kb
+        - l
+        - n
+        - s
