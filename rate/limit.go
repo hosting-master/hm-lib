@@ -9,6 +9,7 @@ package rate
 
 import (
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -38,7 +39,9 @@ type Limiter interface {
 // InMemoryLimiter is a simple in-memory rate limiter.
 // Note: This is not suitable for distributed systems as the state is local to each instance.
 // For production, use a distributed rate limiter (e.g., Redis-based).
+// WARNING: This implementation is for testing and development only.
 type InMemoryLimiter struct {
+	mu    sync.RWMutex
 	limit Limit
 	// visitors tracks request counts per key
 	visitors map[string]*visitor
@@ -59,6 +62,9 @@ func NewInMemoryLimiter(requests int, window time.Duration) *InMemoryLimiter {
 
 // Allow implements Limiter interface.
 func (l *InMemoryLimiter) Allow(key string) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	l.cleanup()
 
 	vis, exists := l.visitors[key]
@@ -79,6 +85,9 @@ func (l *InMemoryLimiter) Allow(key string) bool {
 
 // Remaining implements Limiter interface.
 func (l *InMemoryLimiter) Remaining(key string) int {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
 	l.cleanup()
 
 	vis, exists := l.visitors[key]
@@ -91,6 +100,9 @@ func (l *InMemoryLimiter) Remaining(key string) int {
 
 // ResetAt implements Limiter interface.
 func (l *InMemoryLimiter) ResetAt(key string) time.Time {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
 	vis, exists := l.visitors[key]
 	if !exists {
 		return time.Now().Add(l.limit.Window)
@@ -101,6 +113,9 @@ func (l *InMemoryLimiter) ResetAt(key string) time.Time {
 
 // Limit implements Limiter interface.
 func (l *InMemoryLimiter) Limit() Limit {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
 	return l.limit
 }
 
@@ -114,9 +129,10 @@ func (l *InMemoryLimiter) cleanup() {
 }
 
 // Rate limit constants for preset configurations.
+// Login limits per ADR-0012: 5 attempts per 15 minutes.
 const (
 	loginLimitRequests         = 5
-	loginLimitWindow           = 1 * time.Minute
+	loginLimitWindow           = 15 * time.Minute
 	apiLimitRequests           = 100
 	apiLimitWindow             = 1 * time.Minute
 	passwordResetLimitRequests = 3

@@ -182,9 +182,9 @@ func TestKeyBuilder_ForCombined(t *testing.T) {
 
 func TestPresetLimits(t *testing.T) {
 	t.Parallel()
-	// Verify preset limits are correctly defined
-	if LoginLimit.Requests != 5 || LoginLimit.Window != 1*time.Minute {
-		t.Errorf("LoginLimit = %+v, want {Requests:5, Window:1m}", LoginLimit)
+	// Verify preset limits are correctly defined per ADR-0012
+	if LoginLimit.Requests != 5 || LoginLimit.Window != 15*time.Minute {
+		t.Errorf("LoginLimit = %+v, want {Requests:5, Window:15m}", LoginLimit)
 	}
 
 	if APILimit.Requests != 100 || APILimit.Window != 1*time.Minute {

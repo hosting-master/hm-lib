@@ -5,7 +5,7 @@ package grpc
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -26,21 +26,17 @@ func AuthInterceptor(validator jwt.Validator) grpc.UnaryServerInterceptor {
 		// Extract token from metadata
 		token, err := extractTokenFromMetadata(ctx)
 		if err != nil {
-			return nil, status.Errorf(codes.Unauthenticated, "missing or invalid authorization token: %v", err)
+			return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 		}
 
 		// Validate token
 		claims, err := validator.ValidateToken(token)
 		if err != nil {
-			return nil, status.Errorf(codes.Unauthenticated, "invalid token: %v", err)
+			return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 		}
 
 		// Set tenant context (from JWT claims)
 		ctx = tenant.WithTenant(ctx, claims.TenantID)
-
-		// Set user context (optional - could be a separate package)
-		// For now, we just ensure tenant context is set
-		// User context would be: ctx = user.WithUser(ctx, claims.Subject, claims.Username, claims.Roles)
 
 		return handler(ctx, req)
 	}
@@ -53,13 +49,13 @@ func StreamAuthInterceptor(validator jwt.Validator) grpc.StreamServerInterceptor
 		// Extract token from metadata
 		token, err := extractTokenFromMetadata(serverStream.Context())
 		if err != nil {
-			return status.Errorf(codes.Unauthenticated, "missing or invalid authorization token: %v", err)
+			return status.Error(codes.Unauthenticated, "unauthenticated")
 		}
 
 		// Validate token
 		claims, err := validator.ValidateToken(token)
 		if err != nil {
-			return status.Errorf(codes.Unauthenticated, "invalid token: %v", err)
+			return status.Error(codes.Unauthenticated, "unauthenticated")
 		}
 
 		// Set tenant context
@@ -75,28 +71,50 @@ func StreamAuthInterceptor(validator jwt.Validator) grpc.StreamServerInterceptor
 	}
 }
 
+// Sentinel errors for token extraction.
+var (
+	ErrNoMetadata       = errors.New("no metadata in context")
+	ErrNoAuthHeader     = errors.New("authorization header missing")
+	ErrInvalidBearerFmt = errors.New("authorization header must start with Bearer")
+)
+
 // extractTokenFromMetadata extracts the JWT token from gRPC metadata.
 // It checks for the "authorization" header with "Bearer <token>" format.
+// Per RFC 6750, the "Bearer" scheme is case-insensitive.
 func extractTokenFromMetadata(ctx context.Context) (string, error) {
 	metadata, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return "", fmt.Errorf("extract token: %w", status.Error(codes.Unauthenticated, "no metadata in context"))
+		return "", ErrNoMetadata
 	}
 
 	// Check Authorization header
 	authHeaders := metadata.Get("authorization")
 	if len(authHeaders) == 0 {
-		return "", fmt.Errorf("extract token: %w", status.Error(codes.Unauthenticated, "authorization header missing"))
+		return "", ErrNoAuthHeader
 	}
 
-	// Parse "Bearer <token>" format
+	// Parse "Bearer <token>" format - case-insensitive per RFC 6750
 	token := authHeaders[0]
-	if !strings.HasPrefix(token, "Bearer ") {
-		return "", fmt.Errorf("extract token: %w", status.Error(codes.Unauthenticated, "authorization header must start with 'Bearer '"))
+
+	const bearerPrefix = "Bearer "
+
+	if len(token) < len(bearerPrefix) {
+		return "", ErrInvalidBearerFmt
 	}
 
-	// Remove "Bearer " prefix and any leading/trailing whitespace
-	return strings.TrimSpace(strings.TrimPrefix(token, "Bearer ")), nil
+	// Check if the token starts with "Bearer " (case-insensitive)
+	if !strings.EqualFold(token[:len(bearerPrefix)], bearerPrefix) {
+		return "", ErrInvalidBearerFmt
+	}
+
+	// Extract token part after the prefix
+
+	token = strings.TrimSpace(token[len(bearerPrefix):])
+	if token == "" {
+		return "", ErrInvalidBearerFmt
+	}
+
+	return token, nil
 }
 
 // tenantAwareStream wraps a ServerStream to provide context with tenant ID.

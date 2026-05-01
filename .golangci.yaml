@@ -1,9 +1,11 @@
 version: "2"
+
 run:
   allow-parallel-runners: true
   timeout: 5m
   issues-exit-code: 1
   tests: true
+
 linters:
   enable:
     - asasalint
@@ -98,7 +100,6 @@ linters:
     - tagalign
     - tagliatelle
     - testableexamples
-    - testifylint
     - thelper
     - tparallel
     - unconvert
@@ -113,15 +114,13 @@ linters:
     - wrapcheck
     - wsl_v5
     - zerologlint
+
   settings:
     depguard:
       rules:
         main:
-          list-mode: strict
           files:
-            - "!**/*_a _file.go"
             - "$all"
-          # List of allowed packages.
           allow:
             - $gostd
             - "cel.dev/expr"
@@ -206,7 +205,6 @@ linters:
                 - "github.com/onsi/ginkgo/v2"
                 - "github.com/onsi/gomega"
     tagalign:
-      # tagalign -fix -strict -sort -order "json,bson,mapstructure,format,enums,swaggertype,validate,default,example" ./...
       strict: true
       order:
         - json
@@ -246,6 +244,11 @@ linters:
         - tc
         - ok
         - v
+        - l
+        - n
+        - s
+        - kb
+        - c
       ignore-decls:
         - c *gin.Context
         - c *Config
@@ -254,33 +257,13 @@ linters:
         - g Gomega
         - i int
         - s *Store
-        - "l InMemoryLimiter"
-        - "n NoOpLogger"
-        - "s tenantAwareServerStream"
-        - "s tenantAwareStream"
-        - "kb KeyBuilder"
-        - "c Claims"
-        - "v RS256Validator"
     whitespace:
       multi-if: false
     wsl_v5:
       allow-first-in-block: true
       allow-whole-block: false
       branch-max-lines: 2
-  exclusions:
-    generated: lax
-    rules:
-      - linters:
-          - lll
-        path: api/*
-      - linters:
-          - dupl
-          - lll
-        path: internal/*
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+
 formatters:
   enable:
     - gci
@@ -288,12 +271,6 @@ formatters:
     - gofumpt
     - goimports
     - golines
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
   settings:
     gofumpt:
       extra-rules: true
@@ -301,7 +278,6 @@ formatters:
       local-prefixes:
         - hostingmaster.io
     gci:
-      # gci write -s standard -s "Prefix(github.com)" -s "Prefix(golang.org)" -s "Prefix(google.golang.org)" -s "Prefix(go.mongodb.org)" -s "Prefix(go.uber.org)" -s "Prefix(gopkg.in)" -s "Prefix(helm.sh)" -s "Prefix(k8s.io)" -s "Prefix(sigs.k8s.io)" -s "Prefix(hostingmaster.io)" --custom-order .
       sections:
         - standard
         - prefix(github.com)
@@ -320,6 +296,7 @@ formatters:
       tab-len: 4
       shorten-comments: true
       reformat-tags: true
+
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

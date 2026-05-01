@@ -77,22 +77,20 @@ func NewRS256Validator(publicKey *rsa.PublicKey) *RS256Validator {
 func (v *RS256Validator) ValidateToken(token string) (*Claims, error) {
 	// Parse token without validation to extract claims
 	tokenObj, err := jwt.ParseWithClaims(token, &Claims{}, func(t *jwt.Token) (any, error) {
-		// Verify signing method
-		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
+		// Verify signing method - ADR-0012 requires exactly RS256
+		if t.Method.Alg() != jwt.SigningMethodRS256.Alg() {
 			return nil, ErrInvalidToken
 		}
 
 		return v.publicKey, nil
 	})
 	if err != nil {
-		// Check for specific JWT errors using string comparison
-		// as jwt.ExpiredTokenError and jwt.NbfTokenError are not exported in v5
-		errStr := err.Error()
-		if errStr == "token has invalid claims: token is expired" {
+		// Use exported JWT errors from v5
+		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, ErrTokenExpired
 		}
 
-		if errStr == "token has invalid claims: token is not valid yet" {
+		if errors.Is(err, jwt.ErrTokenNotValidYet) {
 			return nil, ErrTokenNotYetValid
 		}
 
