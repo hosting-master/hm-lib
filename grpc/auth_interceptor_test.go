@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"hostingmaster.io/hm-lib/jwt"
+	tenant "hostingmaster.io/hm-lib/tenants"
 )
 
 const successResult = "success"
@@ -89,9 +91,9 @@ func TestAuthInterceptor_ValidToken(t *testing.T) {
 }
 
 // TestAuthInterceptor_EmptyTenantIDInJWT verifies that Phase 1 behavior is maintained:
-// JWT with empty TenantID in claims is still accepted, as tenant is managed separately.
+// JWT with empty TenantID in claims is accepted, and NO tenant context is set from JWT.
 // This regressions-test ensures that a future refactor accidentally re-adding tenant.WithTenant(ctx, claims.TenantID)
-// would be caught by this test failing.
+// would be caught by this test failing (handler would receive non-empty tenant).
 func TestAuthInterceptor_EmptyTenantIDInJWT(t *testing.T) {
 	t.Parallel()
 
@@ -106,19 +108,27 @@ func TestAuthInterceptor_EmptyTenantIDInJWT(t *testing.T) {
 			ExpiresAt: jwtx.NewNumericDate(time.Now().Add(1 * time.Hour)),
 			Subject:   "user-123",
 		},
-		TenantID: "", // Empty - should NOT cause rejection
+		TenantID: "", // Empty - should NOT be used for tenant context
 	}
 
 	token := generateTestTokenWithClaims(privateKey, claims)
 	validator := jwt.NewRS256Validator(&privateKey.PublicKey)
-
-	// Setup interceptor and context
 	interceptor := AuthInterceptor(validator)
+
 	md := metadata.Pairs("authorization", "Bearer "+token)
 	ctx := metadata.NewIncomingContext(context.Background(), md)
 
-	// Call interceptor with simple handler
-	_, err = interceptor(ctx, nil, &grpc.UnaryServerInfo{}, func(_ context.Context, _ any) (any, error) {
+	// Handler that verifies NO tenant is set in context from JWT (Phase 1 behavior)
+	// If someone adds tenant.WithTenant(ctx, claims.TenantID) in the future, this test will fail.
+	_, err = interceptor(ctx, nil, &grpc.UnaryServerInfo{}, func(ctx context.Context, _ any) (any, error) {
+		// Check that tenant context key does NOT exist in context
+		// tenant.GetTenant returns "" both when key doesn't exist AND when "" is set,
+		// so we must check the key directly via ctx.Value
+		if got := ctx.Value(tenant.TenantContextKey{}); got != nil {
+			//nolint:err113 // Dynamic error in test is acceptable
+			return nil, fmt.Errorf("expected NO tenant key in context from JWT, got %v", got)
+		}
+
 		return successResult, nil
 	})
 	if err != nil {

@@ -27,6 +27,7 @@ linters:
         - c
         - kb
         - l
+        - m
         - n
         - s
         - wg

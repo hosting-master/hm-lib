@@ -129,8 +129,7 @@ func FromContext(ctx context.Context) Logger {
 
 // ExtractClientInfo extracts IP address and User-Agent from gRPC context.
 // It uses gRPC peer information for IP and metadata for User-Agent.
-// Returns IP, User-Agent, and error if extraction fails.
-func ExtractClientInfo(ctx context.Context) (string, string, error) {
+func ExtractClientInfo(ctx context.Context) (string, string) {
 	var ipAddress, userAgent string
 
 	// Extract IP from peer address
@@ -151,59 +150,100 @@ func ExtractClientInfo(ctx context.Context) (string, string, error) {
 	// Extract User-Agent from metadata
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
-		userAgents := md.Get("user-agent")
-		if len(userAgents) > 0 {
+		if userAgents := md.Get("user-agent"); len(userAgents) > 0 {
 			userAgent = userAgents[0]
 		}
 	}
 
-	return ipAddress, userAgent, nil
+	return ipAddress, userAgent
 }
 
 // SanitizeDetails removes potentially sensitive information from audit log details.
 // This prevents PII leaks in audit logs (e.g., passwords, tokens, credit card numbers).
-// The function modifies the map in place.
+// The function modifies the map in place and handles nested maps and slices.
+// For structs and other non-map/non-slice types, the entire value is removed
+// since we cannot safely sanitize arbitrary struct fields.
 func SanitizeDetails(details map[string]any) {
 	if details == nil {
 		return
 	}
 
-	// Keys that should never appear in audit logs
-	sensitiveKeys := []string{
-		"password",
-		"password_hash",
-		"passwordhash",
-		"token",
-		"access_token",
-		"refresh_token",
-		"api_key",
-		"apikey",
-		"secret",
-		"credit_card",
-		"creditcard",
-		"cc_number",
-		"authorization",
-		"auth",
-		"cookie",
-		"set-cookie",
-		"private_key",
-		"privatekey",
-	}
+	sanitizeMap(details)
+}
 
-	// Collect all keys to delete (including case-insensitive matches)
-	keysToDelete := make(map[string]bool)
-	for _, sensitiveKey := range sensitiveKeys {
-		keysToDelete[sensitiveKey] = true
-		// Collect case-insensitive matches
-		for k := range details {
-			if strings.EqualFold(k, sensitiveKey) {
-				keysToDelete[k] = true
+// sensitiveKeys contains keys that should never appear in audit logs.
+var sensitiveKeys = []string{ //nolint:gochecknoglobals
+	"password",
+	"password_hash",
+	"passwordhash",
+	"token",
+	"access_token",
+	"refresh_token",
+	"api_key",
+	"apikey",
+	"secret",
+	"credit_card",
+	"creditcard",
+	"cc_number",
+	"authorization",
+	"auth",
+	"cookie",
+	"set-cookie",
+	"private_key",
+	"privatekey",
+}
+
+// sanitizeMap removes sensitive keys from a string-keyed map and recursively
+// sanitizes nested maps and slices.
+func sanitizeMap(m map[string]any) {
+	for key := range m {
+		if isSensitiveKey(key) {
+			delete(m, key)
+
+			continue
+		}
+
+		sanitizeValue(m, key)
+	}
+}
+
+// sanitizeValue recursively sanitizes a value in a parent map.
+func sanitizeValue(parent map[string]any, key string) {
+	v := parent[key]
+
+	switch val := v.(type) {
+	case map[string]any:
+		sanitizeMap(val)
+	case []any:
+		for i := range val {
+			// For slices, we can't modify in place easily, so we sanitize each element
+			// If it's a map, sanitize it; otherwise leave it
+			if m, ok := val[i].(map[string]any); ok {
+				sanitizeMap(m)
 			}
+		}
+	case map[string]string:
+		for k := range val {
+			if isSensitiveKey(k) {
+				delete(val, k)
+			}
+		}
+	default:
+		// For structs and other types: remove the entire value from parent map
+		// since we cannot safely inspect/sanitize arbitrary structs.
+		// This is defensive: if someone puts a struct in details, it gets removed entirely.
+		delete(parent, key)
+	}
+}
+
+// isSensitiveKey checks if a key matches any sensitive key (case-insensitive).
+func isSensitiveKey(key string) bool {
+	lowerKey := strings.ToLower(key)
+	for _, sensitive := range sensitiveKeys {
+		if strings.ToLower(sensitive) == lowerKey {
+			return true
 		}
 	}
 
-	// Delete all sensitive keys
-	for k := range keysToDelete {
-		delete(details, k)
-	}
+	return false
 }
