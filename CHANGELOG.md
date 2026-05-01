@@ -1,3 +1,12 @@
+## 0.2.0 (2026-05-01)
+
+* fix: add conventional-changelog-conventionalcommits dependency for release-notes-generator ([b9b824d](https://github.com/hosting-master/hm-lib/commit/b9b824d))
+* fix: add correct .releaserc.json configuration ([7dd30be](https://github.com/hosting-master/hm-lib/commit/7dd30be))
+* fix: fix syntax errors and unused imports in interceptors_test.go ([3f4441c](https://github.com/hosting-master/hm-lib/commit/3f4441c))
+* fix: move pkg/tenant and pkg/grpc to tenants/ and grpc/ ([bf38948](https://github.com/hosting-master/hm-lib/commit/bf38948))
+* feat: add tests for tenants and grpc packages ([200b17a](https://github.com/hosting-master/hm-lib/commit/200b17a))
+* chore: update Go module dependencies to latest versions ([7d84466](https://github.com/hosting-master/hm-lib/commit/7d84466))
+
 # [0.1.0](https://github.com/hosting-master/hm-lib/compare/v0.0.0...v0.1.0) (2026-05-01)
 
 
