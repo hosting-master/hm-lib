@@ -246,6 +246,7 @@ linters:
         - tc
         - ok
         - v
+        - "^[a-z]$"
       ignore-decls:
         - c *gin.Context
         - c *Config
