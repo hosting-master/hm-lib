@@ -6,6 +6,8 @@ import (
 )
 
 func TestWithTenant(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	ctx = WithTenant(ctx, "test-tenant-123")
 
@@ -15,6 +17,8 @@ func TestWithTenant(t *testing.T) {
 }
 
 func TestGetTenantEmpty(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 
 	if got := GetTenant(ctx); got != "" {
@@ -23,6 +27,8 @@ func TestGetTenantEmpty(t *testing.T) {
 }
 
 func TestWithBootstrap(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	ctx = WithBootstrap(ctx)
 
@@ -32,6 +38,8 @@ func TestWithBootstrap(t *testing.T) {
 }
 
 func TestIsBootstrap(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		tenantID string
@@ -42,15 +50,17 @@ func TestIsBootstrap(t *testing.T) {
 		{"bootstrap", "bootstrap", true},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctx := context.Background()
-			if tt.tenantID != "" {
-				ctx = WithTenant(ctx, tt.tenantID)
+			if tc.tenantID != "" {
+				ctx = WithTenant(ctx, tc.tenantID)
 			}
 
-			if got := IsBootstrap(ctx); got != tt.want {
-				t.Errorf("IsBootstrap() = %v, want %v", got, tt.want)
+			if got := IsBootstrap(ctx); got != tc.want {
+				t.Errorf("IsBootstrap() = %v, want %v", got, tc.want)
 			}
 		})
 	}

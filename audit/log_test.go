@@ -6,6 +6,8 @@ import (
 )
 
 func TestNoOpLogger_Log(t *testing.T) {
+	t.Parallel()
+
 	logger := &NoOpLogger{}
 	entry := AuditLogEntry{
 		Action:   ActionCreate,
@@ -21,13 +23,15 @@ func TestNoOpLogger_Log(t *testing.T) {
 }
 
 func TestNoOpLogger_LogWithContext(t *testing.T) {
+	t.Parallel()
+
 	logger := &NoOpLogger{}
 
 	err := logger.LogWithContext(
 		context.Background(),
 		ActionLogin,
 		StatusSuccess,
-		map[string]interface{}{"ip_address": "192.168.1.1"},
+		map[string]any{"ip_address": "192.168.1.1"},
 	)
 	if err != nil {
 		t.Errorf("NoOpLogger.LogWithContext() error = %v", err)
@@ -35,6 +39,8 @@ func TestNoOpLogger_LogWithContext(t *testing.T) {
 }
 
 func TestWithLogger(t *testing.T) {
+	t.Parallel()
+
 	logger := &NoOpLogger{}
 	ctx := WithLogger(context.Background(), logger)
 
@@ -45,6 +51,8 @@ func TestWithLogger(t *testing.T) {
 }
 
 func TestFromContext_NoLogger(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	logger := FromContext(ctx)
 
@@ -55,35 +63,42 @@ func TestFromContext_NoLogger(t *testing.T) {
 }
 
 func TestAuditLogEntry_Fields(t *testing.T) {
+	t.Parallel()
+
 	entry := AuditLogEntry{
-		Action:     ActionCreate,
-		Status:     StatusSuccess,
-		TenantID:   "tenant-123",
-		UserID:     "user-456",
-		Username:   "testuser",
+		Action:       ActionCreate,
+		Status:       StatusSuccess,
+		TenantID:     "tenant-123",
+		UserID:       "user-456",
+		Username:     "testuser",
 		ResourceType: "user",
-		ResourceID: "user-789",
-		IPAddress:  "192.168.1.1",
-		UserAgent:  "Mozilla/5.0",
-		Details:    map[string]interface{}{"field": "value"},
-		Error:      "",
+		ResourceID:   "user-789",
+		IPAddress:    "192.168.1.1",
+		UserAgent:    "Mozilla/5.0",
+		Details:      map[string]any{"field": "value"},
+		Error:        "",
 	}
 
 	if entry.Action != ActionCreate {
 		t.Errorf("Action = %v, want %v", entry.Action, ActionCreate)
 	}
+
 	if entry.Status != StatusSuccess {
 		t.Errorf("Status = %v, want %v", entry.Status, StatusSuccess)
 	}
+
 	if entry.TenantID != "tenant-123" {
 		t.Errorf("TenantID = %v, want %v", entry.TenantID, "tenant-123")
 	}
+
 	if entry.Details["field"] != "value" {
 		t.Errorf("Details[field] = %v, want %v", entry.Details["field"], "value")
 	}
 }
 
 func TestActionConstants(t *testing.T) {
+	t.Parallel()
+
 	actions := []Action{
 		ActionCreate,
 		ActionRead,
@@ -116,6 +131,8 @@ func TestActionConstants(t *testing.T) {
 }
 
 func TestStatusConstants(t *testing.T) {
+	t.Parallel()
+
 	statuses := []Status{
 		StatusSuccess,
 		StatusFailure,

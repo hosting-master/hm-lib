@@ -6,7 +6,10 @@ import (
 )
 
 func TestHashPassword(t *testing.T) {
+	t.Parallel()
+
 	password := "TestPassword123!"
+
 	hash, err := HashPassword(password)
 	if err != nil {
 		t.Fatalf("HashPassword() error = %v", err)
@@ -28,7 +31,10 @@ func TestHashPassword(t *testing.T) {
 }
 
 func TestCheckPasswordHash(t *testing.T) {
+	t.Parallel()
+
 	password := "TestPassword123!"
+
 	hash, err := HashPassword(password)
 	if err != nil {
 		t.Fatalf("HashPassword() error = %v", err)
@@ -53,7 +59,10 @@ func TestCheckPasswordHash(t *testing.T) {
 	}
 }
 
+//nolint:funlen // Test function with many test cases
 func TestValidatePasswordStrength(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		password string
@@ -106,23 +115,28 @@ func TestValidatePasswordStrength(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := ValidatePasswordStrength(tt.password)
-			if tt.wantErr == nil && err != nil {
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := ValidatePasswordStrength(tc.password)
+			if tc.wantErr == nil && err != nil {
 				t.Errorf("ValidatePasswordStrength() error = %v, wantErr nil", err)
 			}
-			if tt.wantErr != nil && err == nil {
-				t.Errorf("ValidatePasswordStrength() error = nil, wantErr %v", tt.wantErr)
+
+			if tc.wantErr != nil && err == nil {
+				t.Errorf("ValidatePasswordStrength() error = nil, wantErr %v", tc.wantErr)
 			}
-			if tt.wantErr != nil && err != nil && !errors.Is(err, tt.wantErr) {
-				t.Errorf("ValidatePasswordStrength() error = %v, wantErr %v", err, tt.wantErr)
+
+			if tc.wantErr != nil && err != nil && !errors.Is(err, tc.wantErr) {
+				t.Errorf("ValidatePasswordStrength() error = %v, wantErr %v", err, tc.wantErr)
 			}
 		})
 	}
 }
 
 func TestBcryptCost(t *testing.T) {
+	t.Parallel()
 	// Verify that DefaultBcryptCost is at least 12
 	if DefaultBcryptCost < 12 {
 		t.Errorf("DefaultBcryptCost = %d, want at least 12 (per ADR-0012)", DefaultBcryptCost)

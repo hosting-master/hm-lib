@@ -14,157 +14,175 @@ import (
 type mockServerStream struct {
 	grpc.ServerStream
 
-	ctx context.Context
+	ctx context.Context //nolint:containedctx
 }
 
 func (m *mockServerStream) Context() context.Context {
 	return m.ctx
 }
 
-func (m *mockServerStream) SendMsg(msg interface{}) error { return nil }
-func (m *mockServerStream) RecvMsg(msg interface{}) error { return nil }
+func (m *mockServerStream) SendMsg(msg any) error { return nil }
+func (m *mockServerStream) RecvMsg(msg any) error { return nil }
 
+//nolint:funlen
 func TestTenantInterceptor(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
-		name       string
-		metadata   map[string]string
-		method     string
-		wantErr    bool
+		name        string
+		metadata    map[string]string
+		method      string
+		wantErr     bool
 		wantErrCode codes.Code
 	}{
 		{
-			name:       "valid tenant",
-			metadata:   map[string]string{"x-tenant-id": "tenant-123"},
-			method:     "/some.Service/Method",
-			wantErr:    false,
+			name:     "valid tenant",
+			metadata: map[string]string{"x-tenant-id": "tenant-123"},
+			method:   "/some.Service/Method",
+			wantErr:  false,
 		},
 		{
-			name:       "missing tenant id",
-			metadata:   map[string]string{},
-			method:     "/some.Service/Method",
-			wantErr:    true,
+			name:        "missing tenant id",
+			metadata:    map[string]string{},
+			method:      "/some.Service/Method",
+			wantErr:     true,
 			wantErrCode: codes.Unauthenticated,
 		},
 		{
-			name:       "bootstrap allowed for specific method",
-			metadata:   map[string]string{},
-			method:     "/tenant.v1.TenantService/Bootstrap",
-			wantErr:    false,
+			name:     "bootstrap allowed for specific method",
+			metadata: map[string]string{},
+			method:   "/tenant.v1.TenantService/Bootstrap",
+			wantErr:  false,
 		},
 		{
-			name:       "missing metadata",
-			metadata:   nil,
-			method:     "/some.Service/Method",
-			wantErr:    true,
+			name:        "missing metadata",
+			metadata:    nil,
+			method:      "/some.Service/Method",
+			wantErr:     true,
 			wantErrCode: codes.Unauthenticated,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctx := context.Background()
-			if tt.metadata != nil {
-				md := metadata.New(tt.metadata)
+
+			if tc.metadata != nil {
+				md := metadata.New(tc.metadata)
 				ctx = metadata.NewIncomingContext(ctx, md)
 			}
 
 			interceptor := TenantInterceptor()
 
-			handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-				return nil, nil
+			handler := func(ctx context.Context, req any) (any, error) {
+				return nil, nil //nolint:nilnil
 			}
 
 			info := &grpc.UnaryServerInfo{
-				FullMethod: tt.method,
+				FullMethod: tc.method,
 			}
 
 			_, err := interceptor(ctx, nil, info, handler)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("interceptor() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("interceptor() error = %v, wantErr %v", err, tc.wantErr)
+
 				return
 			}
 
 			if err != nil {
-				st, ok := status.FromError(err)
+				statusCode, ok := status.FromError(err)
 				if !ok {
 					t.Errorf("error is not a status error")
+
 					return
 				}
-				if st.Code() != tt.wantErrCode {
-					t.Errorf("error code = %v, wantErrCode %v", st.Code(), tt.wantErrCode)
+
+				if statusCode.Code() != tc.wantErrCode {
+					t.Errorf("error code = %v, wantErrCode %v", statusCode.Code(), tc.wantErrCode)
 				}
 			}
 		})
 	}
 }
 
+//nolint:funlen
 func TestStreamTenantInterceptor(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
-		name       string
-		metadata   map[string]string
-		method     string
-		wantErr    bool
+		name        string
+		metadata    map[string]string
+		method      string
+		wantErr     bool
 		wantErrCode codes.Code
 	}{
 		{
-			name:       "valid tenant",
-			metadata:   map[string]string{"x-tenant-id": "tenant-123"},
-			method:     "/some.Service/Method",
-			wantErr:    false,
+			name:     "valid tenant",
+			metadata: map[string]string{"x-tenant-id": "tenant-123"},
+			method:   "/some.Service/Method",
+			wantErr:  false,
 		},
 		{
-			name:       "missing tenant id",
-			metadata:   map[string]string{},
-			method:     "/some.Service/Method",
-			wantErr:    true,
+			name:        "missing tenant id",
+			metadata:    map[string]string{},
+			method:      "/some.Service/Method",
+			wantErr:     true,
 			wantErrCode: codes.Unauthenticated,
 		},
 		{
-			name:       "bootstrap allowed for specific method",
-			metadata:   map[string]string{},
-			method:     "/tenant.v1.TenantService/Bootstrap",
-			wantErr:    false,
+			name:     "bootstrap allowed for specific method",
+			metadata: map[string]string{},
+			method:   "/tenant.v1.TenantService/Bootstrap",
+			wantErr:  false,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctx := context.Background()
-			if tt.metadata != nil {
-				md := metadata.New(tt.metadata)
+
+			if tc.metadata != nil {
+				md := metadata.New(tc.metadata)
 				ctx = metadata.NewIncomingContext(ctx, md)
 			}
 
 			interceptor := StreamTenantInterceptor()
 
-			handler := func(srv interface{}, stream grpc.ServerStream) error {
+			handler := func(srv any, stream grpc.ServerStream) error {
 				return nil
 			}
 
 			info := &grpc.StreamServerInfo{
-				FullMethod: tt.method,
+				FullMethod: tc.method,
 			}
 
-			ss := &mockServerStream{
+			serverStream := &mockServerStream{
 				ctx: ctx,
 			}
 
-			err := interceptor(nil, ss, info, handler)
+			err := interceptor(nil, serverStream, info, handler)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("interceptor() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("interceptor() error = %v, wantErr %v", err, tc.wantErr)
+
 				return
 			}
 
 			if err != nil {
-				st, ok := status.FromError(err)
+				statusCode, ok := status.FromError(err)
 				if !ok {
 					t.Errorf("error is not a status error")
+
 					return
 				}
-				if st.Code() != tt.wantErrCode {
-					t.Errorf("error code = %v, wantErrCode %v", st.Code(), tt.wantErrCode)
+
+				if statusCode.Code() != tc.wantErrCode {
+					t.Errorf("error code = %v, wantErrCode %v", statusCode.Code(), tc.wantErrCode)
 				}
 			}
 		})

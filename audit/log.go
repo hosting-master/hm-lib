@@ -50,9 +50,9 @@ type AuditLogEntry struct {
 	// Timestamp is when the event occurred.
 	Timestamp time.Time `json:"timestamp" bson:"timestamp"`
 	// TenantID is the tenant context for the event.
-	TenantID string `json:"tenant_id" bson:"tenant_id"`
+	TenantID string `json:"tenantId" bson:"tenantId"`
 	// UserID is the user who performed the action.
-	UserID string `json:"user_id" bson:"user_id,omitempty"`
+	UserID string `json:"userId" bson:"userId,omitempty"`
 	// Username is the username of the user.
 	Username string `json:"username" bson:"username,omitempty"`
 	// Action is what action was performed.
@@ -60,15 +60,15 @@ type AuditLogEntry struct {
 	// Status is the outcome of the action.
 	Status Status `json:"status" bson:"status"`
 	// ResourceType is the type of resource affected (e.g., "user", "tenant", "token").
-	ResourceType string `json:"resource_type" bson:"resource_type,omitempty"`
+	ResourceType string `json:"resourceType" bson:"resourceType,omitempty"`
 	// ResourceID is the identifier of the resource.
-	ResourceID string `json:"resource_id" bson:"resource_id,omitempty"`
+	ResourceID string `json:"resourceId" bson:"resourceId,omitempty"`
 	// IPAddress is the client IP address.
-	IPAddress string `json:"ip_address" bson:"ip_address,omitempty"`
+	IPAddress string `json:"ipAddress" bson:"ipAddress,omitempty"`
 	// UserAgent is the client user agent.
-	UserAgent string `json:"user_agent" bson:"user_agent,omitempty"`
+	UserAgent string `json:"userAgent" bson:"userAgent,omitempty"`
 	// Details contains additional context-specific information.
-	Details map[string]interface{} `json:"details" bson:"details,omitempty"`
+	Details map[string]any `json:"details" bson:"details,omitempty"`
 	// Error contains error information if Status is StatusFailure.
 	Error string `json:"error,omitempty" bson:"error,omitempty"`
 }
@@ -86,7 +86,7 @@ type Logger interface {
 	// LogWithContext is a convenience method that extracts tenant and user info from context.
 	// If tenant or user info is not available in context, it should still log with available info.
 	// Implementations MUST NOT block the calling goroutine.
-	LogWithContext(ctx context.Context, action Action, status Status, details map[string]interface{}) error
+	LogWithContext(ctx context.Context, action Action, status Status, details map[string]any) error
 }
 
 // NoOpLogger is a no-operation implementation of Logger for testing or when audit logging is disabled.
@@ -98,7 +98,7 @@ func (n *NoOpLogger) Log(ctx context.Context, entry AuditLogEntry) error {
 }
 
 // LogWithContext implements Logger interface - does nothing.
-func (n *NoOpLogger) LogWithContext(ctx context.Context, action Action, status Status, details map[string]interface{}) error {
+func (n *NoOpLogger) LogWithContext(ctx context.Context, action Action, status Status, details map[string]any) error {
 	return nil
 }
 
@@ -112,9 +112,12 @@ func WithLogger(ctx context.Context, logger Logger) context.Context {
 
 // FromContext retrieves the audit logger from the context.
 // Returns NoOpLogger if no logger is set.
+//
+//nolint:ireturn // Returns Logger interface - this is a valid pattern for context value retrieval
 func FromContext(ctx context.Context) Logger {
 	if logger, ok := ctx.Value(contextKey{}).(Logger); ok {
 		return logger
 	}
+
 	return &NoOpLogger{}
 }

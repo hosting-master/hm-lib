@@ -5,6 +5,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -13,7 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"hostingmaster.io/hm-lib/jwt"
-	"hostingmaster.io/hm-lib/tenants"
+	tenant "hostingmaster.io/hm-lib/tenants"
 )
 
 // AuthInterceptor returns a gRPC unary server interceptor that validates JWT tokens
@@ -21,7 +22,7 @@ import (
 // The JWT validator must be provided by the consuming service (e.g., auth-service).
 // Keys are loaded from Kubernetes Secrets by the service.
 func AuthInterceptor(validator jwt.Validator) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		// Extract token from metadata
 		token, err := extractTokenFromMetadata(ctx)
 		if err != nil {
@@ -48,9 +49,9 @@ func AuthInterceptor(validator jwt.Validator) grpc.UnaryServerInterceptor {
 // StreamAuthInterceptor returns a gRPC stream server interceptor that validates JWT tokens
 // and sets both tenant and user context for streaming RPCs.
 func StreamAuthInterceptor(validator jwt.Validator) grpc.StreamServerInterceptor {
-	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv any, serverStream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		// Extract token from metadata
-		token, err := extractTokenFromMetadata(ss.Context())
+		token, err := extractTokenFromMetadata(serverStream.Context())
 		if err != nil {
 			return status.Errorf(codes.Unauthenticated, "missing or invalid authorization token: %v", err)
 		}
@@ -62,11 +63,11 @@ func StreamAuthInterceptor(validator jwt.Validator) grpc.StreamServerInterceptor
 		}
 
 		// Set tenant context
-		ctx := tenant.WithTenant(ss.Context(), claims.TenantID)
+		ctx := tenant.WithTenant(serverStream.Context(), claims.TenantID)
 
 		// Wrap the server stream with the new context
 		wrappedStream := &tenantAwareStream{
-			ServerStream: ss,
+			ServerStream: serverStream,
 			ctx:          ctx,
 		}
 
@@ -77,21 +78,21 @@ func StreamAuthInterceptor(validator jwt.Validator) grpc.StreamServerInterceptor
 // extractTokenFromMetadata extracts the JWT token from gRPC metadata.
 // It checks for the "authorization" header with "Bearer <token>" format.
 func extractTokenFromMetadata(ctx context.Context) (string, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
+	metadata, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return "", status.Error(codes.Unauthenticated, "no metadata in context")
+		return "", fmt.Errorf("extract token: %w", status.Error(codes.Unauthenticated, "no metadata in context"))
 	}
 
 	// Check Authorization header
-	authHeaders := md.Get("authorization")
+	authHeaders := metadata.Get("authorization")
 	if len(authHeaders) == 0 {
-		return "", status.Error(codes.Unauthenticated, "authorization header missing")
+		return "", fmt.Errorf("extract token: %w", status.Error(codes.Unauthenticated, "authorization header missing"))
 	}
 
 	// Parse "Bearer <token>" format
 	token := authHeaders[0]
 	if !strings.HasPrefix(token, "Bearer ") {
-		return "", status.Error(codes.Unauthenticated, "authorization header must start with 'Bearer '")
+		return "", fmt.Errorf("extract token: %w", status.Error(codes.Unauthenticated, "authorization header must start with 'Bearer '"))
 	}
 
 	// Remove "Bearer " prefix and any leading/trailing whitespace
@@ -103,7 +104,8 @@ func extractTokenFromMetadata(ctx context.Context) (string, error) {
 type tenantAwareStream struct {
 	grpc.ServerStream
 
-	ctx context.Context
+	// Required to store context in the stream wrapper for gRPC
+	ctx context.Context //nolint:containedctx
 }
 
 // Context returns the context with tenant ID.
@@ -121,16 +123,18 @@ func UnaryAuthInterceptorWithTenantOnly() grpc.UnaryServerInterceptor {
 // CombineInterceptors combines multiple unary interceptors into one.
 // The interceptors are executed in the order they are provided.
 func CombineInterceptors(interceptors ...grpc.UnaryServerInterceptor) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		// Build the chain from right to left (last interceptor wraps the handler first)
-		var combined grpc.UnaryHandler = handler
+		combined := handler
+
 		for i := len(interceptors) - 1; i >= 0; i-- {
 			interceptor := interceptors[i]
 			prevHandler := combined
-			combined = func(ctx context.Context, req interface{}) (interface{}, error) {
+			combined = func(ctx context.Context, req any) (any, error) {
 				return interceptor(ctx, req, info, prevHandler)
 			}
 		}
+
 		return combined(ctx, req)
 	}
 }

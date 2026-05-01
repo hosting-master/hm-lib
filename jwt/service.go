@@ -8,6 +8,7 @@ package jwt
 import (
 	"crypto/rsa"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -31,7 +32,7 @@ type Claims struct {
 	// HostingMaster specific claims
 	Username string   `json:"username,omitempty"`
 	Roles    []string `json:"roles,omitempty"`
-	TenantID string   `json:"tenant_id,omitempty"`
+	TenantID string   `json:"tenantId,omitempty"`
 }
 
 // GetUserID returns the user ID from the Subject claim.
@@ -75,14 +76,14 @@ func NewRS256Validator(publicKey *rsa.PublicKey) *RS256Validator {
 // ValidateToken validates a JWT token signed with RS256.
 func (v *RS256Validator) ValidateToken(token string) (*Claims, error) {
 	// Parse token without validation to extract claims
-	tokenObj, err := jwt.ParseWithClaims(token, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+	tokenObj, err := jwt.ParseWithClaims(token, &Claims{}, func(t *jwt.Token) (any, error) {
 		// Verify signing method
 		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, ErrInvalidToken
 		}
+
 		return v.publicKey, nil
 	})
-
 	if err != nil {
 		// Check for specific JWT errors using string comparison
 		// as jwt.ExpiredTokenError and jwt.NbfTokenError are not exported in v5
@@ -90,9 +91,11 @@ func (v *RS256Validator) ValidateToken(token string) (*Claims, error) {
 		if errStr == "token has invalid claims: token is expired" {
 			return nil, ErrTokenExpired
 		}
+
 		if errStr == "token has invalid claims: token is not valid yet" {
 			return nil, ErrTokenNotYetValid
 		}
+
 		return nil, ErrInvalidToken
 	}
 
@@ -113,8 +116,9 @@ func (v *RS256Validator) ValidateToken(token string) (*Claims, error) {
 func ParsePublicKeyFromPEM(pemData []byte) (*rsa.PublicKey, error) {
 	key, err := jwt.ParseRSAPublicKeyFromPEM(pemData)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse RSA public key: %w", err)
 	}
+
 	return key, nil
 }
 
@@ -123,6 +127,7 @@ func (c *Claims) GetExpiryDuration() time.Duration {
 	if c.ExpiresAt == nil {
 		return 0
 	}
+
 	return time.Until(c.ExpiresAt.Time)
 }
 
@@ -131,5 +136,6 @@ func (c *Claims) IsExpired() bool {
 	if c.ExpiresAt == nil {
 		return false
 	}
+
 	return time.Now().After(c.ExpiresAt.Time)
 }

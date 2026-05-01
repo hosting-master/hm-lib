@@ -8,6 +8,7 @@
 package rate
 
 import (
+	"strings"
 	"time"
 )
 
@@ -44,77 +45,98 @@ type InMemoryLimiter struct {
 }
 
 type visitor struct {
-	count    int
+	count     int
 	expiresAt time.Time
 }
 
 // NewInMemoryLimiter creates a new in-memory rate limiter.
 func NewInMemoryLimiter(requests int, window time.Duration) *InMemoryLimiter {
 	return &InMemoryLimiter{
-		limit:   Limit{Requests: requests, Window: window},
+		limit:    Limit{Requests: requests, Window: window},
 		visitors: make(map[string]*visitor),
 	}
 }
 
 // Allow implements Limiter interface.
-func (l *InMemoryLimiter) Allow(key string) bool {
-	l.cleanup()
-	v, exists := l.visitors[key]
-	if !exists || time.Now().After(v.expiresAt) {
-		l.visitors[key] = &visitor{count: 1, expiresAt: time.Now().Add(l.limit.Window)}
+func (limiter *InMemoryLimiter) Allow(key string) bool {
+	limiter.cleanup()
+
+	vis, exists := limiter.visitors[key]
+	if !exists || time.Now().After(vis.expiresAt) {
+		limiter.visitors[key] = &visitor{count: 1, expiresAt: time.Now().Add(limiter.limit.Window)}
+
 		return true
 	}
-	if v.count < l.limit.Requests {
-		v.count++
+
+	if vis.count < limiter.limit.Requests {
+		vis.count++
+
 		return true
 	}
+
 	return false
 }
 
 // Remaining implements Limiter interface.
-func (l *InMemoryLimiter) Remaining(key string) int {
-	l.cleanup()
-	v, exists := l.visitors[key]
-	if !exists || time.Now().After(v.expiresAt) {
-		return l.limit.Requests
+func (limiter *InMemoryLimiter) Remaining(key string) int {
+	limiter.cleanup()
+
+	vis, exists := limiter.visitors[key]
+	if !exists || time.Now().After(vis.expiresAt) {
+		return limiter.limit.Requests
 	}
-	return l.limit.Requests - v.count
+
+	return limiter.limit.Requests - vis.count
 }
 
 // ResetAt implements Limiter interface.
-func (l *InMemoryLimiter) ResetAt(key string) time.Time {
-	v, exists := l.visitors[key]
+func (limiter *InMemoryLimiter) ResetAt(key string) time.Time {
+	vis, exists := limiter.visitors[key]
 	if !exists {
-		return time.Now().Add(l.limit.Window)
+		return time.Now().Add(limiter.limit.Window)
 	}
-	return v.expiresAt
+
+	return vis.expiresAt
 }
 
 // Limit implements Limiter interface.
-func (l *InMemoryLimiter) Limit() Limit {
-	return l.limit
+func (limiter *InMemoryLimiter) Limit() Limit {
+	return limiter.limit
 }
 
 // cleanup removes expired visitors to prevent memory leaks.
-func (l *InMemoryLimiter) cleanup() {
-	for key, v := range l.visitors {
-		if time.Now().After(v.expiresAt) {
-			delete(l.visitors, key)
+func (limiter *InMemoryLimiter) cleanup() {
+	for key, vis := range limiter.visitors {
+		if time.Now().After(vis.expiresAt) {
+			delete(limiter.visitors, key)
 		}
 	}
 }
 
+// Rate limit constants for preset configurations.
+const (
+	loginLimitRequests         = 5
+	loginLimitWindow           = 1 * time.Minute
+	apiLimitRequests           = 100
+	apiLimitWindow             = 1 * time.Minute
+	passwordResetLimitRequests = 3
+	passwordResetLimitWindow   = 1 * time.Hour
+	tokenRefreshLimitRequests  = 10
+	tokenRefreshLimitWindow    = 1 * time.Minute
+)
+
 // Common rate limit presets for HostingMaster services.
+//
 //nolint:gochecknoglobals // Package-level constants for rate limiting configuration
 var (
 	// LoginLimit: 5 attempts per minute per IP/username.
-	LoginLimit = Limit{Requests: 5, Window: 1 * time.Minute}
+	LoginLimit = Limit{Requests: loginLimitRequests, Window: loginLimitWindow}
 	// APILimit: 100 requests per minute per tenant.
-	APILimit = Limit{Requests: 100, Window: 1 * time.Minute}
+	APILimit = Limit{Requests: apiLimitRequests, Window: apiLimitWindow}
 	// PasswordResetLimit: 3 attempts per hour per user.
-	PasswordResetLimit = Limit{Requests: 3, Window: 1 * time.Hour}
+	PasswordResetLimit = Limit{Requests: passwordResetLimitRequests, Window: passwordResetLimitWindow}
 	// TokenRefreshLimit: 10 refreshes per minute per user.
-	TokenRefreshLimit = Limit{Requests: 10, Window: 1 * time.Minute}
+	TokenRefreshLimit = Limit{Requests: tokenRefreshLimitRequests, Window: tokenRefreshLimitWindow}
 )
 
 // KeyBuilder helps construct rate limiting keys from various components.
@@ -144,9 +166,14 @@ func (kb *KeyBuilder) ForTenant(tenantID string) string {
 
 // ForCombined creates a key combining multiple identifiers.
 func (kb *KeyBuilder) ForCombined(parts ...string) string {
-	key := kb.prefix + ":"
+	var buf strings.Builder
+	buf.WriteString(kb.prefix)
+	buf.WriteString(":")
+
 	for _, part := range parts {
-		key += part + ":"
+		buf.WriteString(part)
+		buf.WriteString(":")
 	}
-	return key
+
+	return buf.String()
 }
