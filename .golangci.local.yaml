@@ -28,3 +28,4 @@ linters:
         - l
         - n
         - s
+        - wg

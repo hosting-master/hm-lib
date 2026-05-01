@@ -95,21 +95,36 @@ func extractTokenFromMetadata(ctx context.Context) (string, error) {
 	// Parse "Bearer <token>" format - case-insensitive per RFC 6750
 	token := authHeaders[0]
 
-	const bearerPrefix = "Bearer "
+	// RFC 6750 Section 2.1: auth-scheme = token68 / ( token68 1*SP ( token68 / ":" ) )
+	// For Bearer: "Bearer" SP token68
+	// We need exactly: "Bearer" + single space + token (no leading/trailing spaces in token)
+	const bearerScheme = "Bearer"
 
-	if len(token) < len(bearerPrefix) {
+	const minLength = len(bearerScheme) + 1 + 1 // "Bearer" + space + at least 1 char
+
+	if len(token) < minLength {
 		return "", ErrInvalidBearerFmt
 	}
 
-	// Check if the token starts with "Bearer " (case-insensitive)
-	if !strings.EqualFold(token[:len(bearerPrefix)], bearerPrefix) {
+	// Check scheme is "Bearer" (case-insensitive)
+	if !strings.EqualFold(token[:len(bearerScheme)], bearerScheme) {
 		return "", ErrInvalidBearerFmt
 	}
 
-	// Extract token part after the prefix
+	// Check there's exactly one space after the scheme
+	if token[len(bearerScheme)] != ' ' {
+		return "", ErrInvalidBearerFmt
+	}
 
-	token = strings.TrimSpace(token[len(bearerPrefix):])
+	// Extract token part after the single space
+	token = token[len(bearerScheme)+1:]
 	if token == "" {
+		return "", ErrInvalidBearerFmt
+	}
+
+	// RFC 6750: token68 should not have leading or trailing whitespace
+	// But some implementations send tokens with trailing spaces, be lenient on trailing only
+	if strings.HasPrefix(token, " ") {
 		return "", ErrInvalidBearerFmt
 	}
 

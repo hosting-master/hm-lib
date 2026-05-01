@@ -140,6 +140,18 @@ func TestRS256Validator_ValidateToken(t *testing.T) {
 			wantErr:     true,
 			wantErrType: ErrInvalidToken,
 		},
+		{
+			name:   "alg none token (CVE-2015-2951 attack vector)",
+			claims: Claims{},
+			tokenFunc: func(*rsa.PrivateKey, Claims) (string, error) {
+				// Create a token with alg: none - should be rejected by WithValidMethods
+				token := jwt.NewWithClaims(jwt.SigningMethodNone, jwt.MapClaims{"test": "value"})
+
+				return token.SignedString(jwt.UnsafeAllowNoneSignatureType)
+			},
+			wantErr:     true,
+			wantErrType: ErrInvalidToken,
+		},
 	}
 
 	for _, tc := range tests {

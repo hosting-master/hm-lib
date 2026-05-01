@@ -1,6 +1,7 @@
 package rate
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -198,4 +199,46 @@ func TestPresetLimits(t *testing.T) {
 	if TokenRefreshLimit.Requests != 10 || TokenRefreshLimit.Window != 1*time.Minute {
 		t.Errorf("TokenRefreshLimit = %+v, want {Requests:10, Window:1m}", TokenRefreshLimit)
 	}
+}
+
+// TestInMemoryLimiter_ConcurrentReadsWithExpiry tests for data races when
+// multiple goroutines call Remaining() and ResetAt() with expired entries.
+// This test ensures the fix for the cleanup()-under-RLock issue is working.
+func TestInMemoryLimiter_ConcurrentReadsWithExpiry(t *testing.T) {
+	t.Parallel()
+
+	// Use a very short window so entries expire quickly
+	limiter := NewInMemoryLimiter(5, 50*time.Millisecond)
+
+	// Create and expire some entries
+	for i := range 10 {
+		key := "key-" + string(rune('a'+i))
+		limiter.Allow(key)
+		limiter.Allow(key)
+	}
+
+	// Wait for entries to expire
+	time.Sleep(100 * time.Millisecond)
+
+	// Now trigger concurrent Remaining() and ResetAt() calls
+	// This used to cause a data race because cleanup() was called under RLock
+	const numGoroutines = 200
+
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(numGoroutines)
+
+	for idx := range numGoroutines {
+		go func(i int) {
+			defer waitGroup.Done()
+
+			key := "key-" + string(rune('a'+(i%10)))
+
+			// These calls trigger cleanup() which modifies the map
+			_ = limiter.Remaining(key)
+			_ = limiter.ResetAt(key)
+		}(idx)
+	}
+
+	waitGroup.Wait()
+	// If we get here without a race detected by -race, the fix is working
 }

@@ -201,10 +201,10 @@ func TestExtractTokenFromMetadata(t *testing.T) {
 			wantErr:  true,
 		},
 		{
-			name:     "bearer with spaces",
+			name:     "bearer with multiple spaces (invalid per RFC 6750)",
 			metadata: metadata.Pairs("authorization", "Bearer  eyJhbGciOiJIUzI1NiJ9"),
-			want:     "eyJhbGciOiJIUzI1NiJ9",
-			wantErr:  false,
+			want:     "",
+			wantErr:  true,
 		},
 	}
 
