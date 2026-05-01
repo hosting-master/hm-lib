@@ -67,4 +67,3 @@ linters:
     varnamelen:
       ignore-decls:
         - "v jwt.Validator"
-cmi
