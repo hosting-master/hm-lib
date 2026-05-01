@@ -15,7 +15,7 @@ GOLANGCI_OUTPUT_CONFIG := .golangci.yaml
 YQ_CMD := yq
 
 # Tool versions
-GOLANGCI_VERSION := v1.61.0
+GOLANGCI_VERSION := v2.11.4
 
 .PHONY: all test test-race test-cover lint lint-fix lint-config clean tidy generate help
 
