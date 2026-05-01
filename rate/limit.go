@@ -1,6 +1,9 @@
 // Package rate provides rate limiting utilities for HostingMaster services.
 // This package contains helper functions and types for implementing rate limiting
 // at the service level.
+//
+// NOTE: The InMemoryLimiter is for testing and development only.
+// For production, implement a distributed limiter (e.g., Redis-based).
 
 package rate
 

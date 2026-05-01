@@ -23,15 +23,25 @@ var ErrTokenExpired = errors.New("token has expired")
 var ErrTokenNotYetValid = errors.New("token is not yet valid")
 
 // Claims represents the standard JWT claims with HostingMaster-specific extensions.
+// Note: UserID is mapped to the standard "sub" (Subject) claim for compatibility.
 type Claims struct {
-	// Standard claims
+	// Standard claims (Subject is used for UserID)
 	jwt.RegisteredClaims
 
 	// HostingMaster specific claims
-	UserID   string   `json:"sub,omitempty"` // Subject (user ID)
 	Username string   `json:"username,omitempty"`
 	Roles    []string `json:"roles,omitempty"`
 	TenantID string   `json:"tenant_id,omitempty"`
+}
+
+// GetUserID returns the user ID from the Subject claim.
+func (c *Claims) GetUserID() string {
+	return c.Subject
+}
+
+// SetUserID sets the user ID as the Subject claim.
+func (c *Claims) SetUserID(userID string) {
+	c.Subject = userID
 }
 
 // TokenPair represents a pair of access and refresh tokens.

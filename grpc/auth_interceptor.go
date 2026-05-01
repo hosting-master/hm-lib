@@ -39,7 +39,7 @@ func AuthInterceptor(validator jwt.Validator) grpc.UnaryServerInterceptor {
 
 		// Set user context (optional - could be a separate package)
 		// For now, we just ensure tenant context is set
-		// User context would be: ctx = user.WithUser(ctx, claims.UserID, claims.Username, claims.Roles)
+		// User context would be: ctx = user.WithUser(ctx, claims.Subject, claims.Username, claims.Roles)
 
 		return handler(ctx, req)
 	}

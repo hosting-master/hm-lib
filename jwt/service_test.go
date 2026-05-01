@@ -49,8 +49,8 @@ func TestRS256Validator_ValidateToken(t *testing.T) {
 					IssuedAt:  jwt.NewNumericDate(time.Now()),
 					NotBefore: jwt.NewNumericDate(time.Now()),
 					Issuer:    "hostingmaster",
+					Subject:   "user-123",
 				},
-				UserID:   "user-123",
 				Username: "testuser",
 				Roles:    []string{"customer"},
 				TenantID: "tenant-456",
@@ -58,8 +58,8 @@ func TestRS256Validator_ValidateToken(t *testing.T) {
 			tokenFunc: generateTestToken,
 			wantErr:   false,
 			checkFunc: func(t *testing.T, claims *Claims) {
-				if claims.UserID != "user-123" {
-					t.Errorf("got UserID %q, want %q", claims.UserID, "user-123")
+				if claims.Subject != "user-123" {
+					t.Errorf("got Subject (UserID) %q, want %q", claims.Subject, "user-123")
 				}
 				if claims.Username != "testuser" {
 					t.Errorf("got Username %q, want %q", claims.Username, "testuser")

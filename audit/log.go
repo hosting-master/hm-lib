@@ -76,13 +76,16 @@ type AuditLogEntry struct {
 // Logger is the interface that audit log implementations must satisfy.
 // Each service (e.g., auth-service) must provide its own implementation
 // that persists audit logs to the appropriate storage (e.g., MongoDB).
+//
+// IMPORTANT: Implementations MUST handle persistence ASYNCHRONOUSLY to avoid
+// blocking the main request flow. Use channels, goroutines, or async storage drivers.
 type Logger interface {
-	// Log records an audit log entry.
-	// The implementation should handle persistence asynchronously to avoid
-	// blocking the main request flow.
+	// Log records an audit log entry asynchronously.
+	// Implementations MUST NOT block the calling goroutine.
 	Log(ctx context.Context, entry AuditLogEntry) error
 	// LogWithContext is a convenience method that extracts tenant and user info from context.
 	// If tenant or user info is not available in context, it should still log with available info.
+	// Implementations MUST NOT block the calling goroutine.
 	LogWithContext(ctx context.Context, action Action, status Status, details map[string]interface{}) error
 }
 
