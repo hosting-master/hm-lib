@@ -6,7 +6,7 @@ GOLANGCI_LINT := golangci-lint
 MODULE := hostingmaster.io/hm-lib
 
 # Directories
-PKG_DIR := ./pkg/...
+PKG_DIR := ./...
 
 # Linter configuration
 GOLANGCI_TEMPLATE := ./templates/golangci-linter/golangci.yaml

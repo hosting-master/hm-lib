@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"hostingmaster.io/hm-lib/pkg/tenant"
+	"hostingmaster.io/hm-lib/tenants"
 )
 
 const (
