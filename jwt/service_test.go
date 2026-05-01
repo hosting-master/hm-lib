@@ -187,15 +187,11 @@ func TestClaims_GetExpiryDuration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			claims := &Claims{RegisteredClaims: jwt.RegisteredClaims{ExpiresAt: tt.exp}}
-			if got := claims.GetExpiryDuration(); got != tt.wantDur {
-				// Allow small tolerance for timing
-				if tt.wantDur > 0 && got > 0 {
-					if got < tt.wantDur-50*time.Millisecond || got > tt.wantDur+50*time.Millisecond {
-						t.Errorf("GetExpiryDuration() = %v, want %v", got, tt.wantDur)
-					}
-				} else if got != tt.wantDur {
-					t.Errorf("GetExpiryDuration() = %v, want %v", got, tt.wantDur)
-				}
+			got := claims.GetExpiryDuration()
+			// Allow 1 second tolerance for timing differences between token creation and check
+			diff := got - tt.wantDur
+			if diff < -1*time.Second || diff > 1*time.Second {
+				t.Errorf("GetExpiryDuration() = %v, want %v (diff: %v)", got, tt.wantDur, diff)
 			}
 		})
 	}

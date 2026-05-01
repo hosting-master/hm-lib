@@ -75,10 +75,11 @@ func (v *RS256Validator) ValidateToken(token string) (*Claims, error) {
 	if err != nil {
 		// Check for specific JWT errors using string comparison
 		// as jwt.ExpiredTokenError and jwt.NbfTokenError are not exported in v5
-		if err.Error() == "token is expired" {
+		errStr := err.Error()
+		if errStr == "token has invalid claims: token is expired" {
 			return nil, ErrTokenExpired
 		}
-		if err.Error() == "token is not valid yet" {
+		if errStr == "token has invalid claims: token is not valid yet" {
 			return nil, ErrTokenNotYetValid
 		}
 		return nil, ErrInvalidToken
