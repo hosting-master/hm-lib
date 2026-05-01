@@ -254,13 +254,13 @@ linters:
         - g Gomega
         - i int
         - s *Store
-        - "l hostingmaster.io/hm-lib/rate.InMemoryLimiter"
-        - "n hostingmaster.io/hm-lib/audit.NoOpLogger"
-        - "s hostingmaster.io/hm-lib/grpc.tenantAwareServerStream"
-        - "s hostingmaster.io/hm-lib/grpc.tenantAwareStream"
-        - "kb hostingmaster.io/hm-lib/rate.KeyBuilder"
-        - "c hostingmaster.io/hm-lib/jwt.Claims"
-        - "v hostingmaster.io/hm-lib/jwt.RS256Validator"
+        - "l InMemoryLimiter"
+        - "n NoOpLogger"
+        - "s tenantAwareServerStream"
+        - "s tenantAwareStream"
+        - "kb KeyBuilder"
+        - "c Claims"
+        - "v RS256Validator"
     whitespace:
       multi-if: false
     wsl_v5:

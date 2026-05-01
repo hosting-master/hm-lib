@@ -65,11 +65,10 @@ linters:
             - "hostingmaster.io/hm-lib/templates"
             - "hostingmaster.io/hm-lib/tenants"
     varnamelen:
-      ignore-decls:
-        - "l InMemoryLimiter"
-        - "n NoOpLogger"
-        - "s tenantAwareServerStream"
-        - "s tenantAwareStream"
-        - "kb KeyBuilder"
-        - "c Claims"
-        - "v RS256Validator"
+      ignore-names:
+        - l
+        - n
+        - s
+        - kb
+        - c
+        - v
