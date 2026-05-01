@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"google.golang.org/grpc"
@@ -21,8 +20,8 @@ func (m *mockServerStream) Context() context.Context {
 	return m.ctx
 }
 
-func (m *mockServerStream) SendMsg(m interface{}) error { return nil }
-func (m *mockServerStream) RecvMsg(m interface{}) error { return nil }
+func (m *mockServerStream) SendMsg(msg interface{}) error { return nil }
+func (m *mockServerStream) RecvMsg(msg interface{}) error { return nil }
 
 func TestTenantInterceptor(t *testing.T) {
 	tests := []struct {
@@ -33,29 +32,29 @@ func TestTenantInterceptor(t *testing.T) {
 		wantErrCode codes.Code
 	}{
 		{
-			name:     "valid tenant",
-			metadata: map[string]string{"x-tenant-id": "tenant-123"},
-			method:   "/some.Service/Method",
-			wantErr:  false,
+			name:       "valid tenant",
+			metadata:   map[string]string{"x-tenant-id": "tenant-123"},
+			method:     "/some.Service/Method",
+			wantErr:    false,
 		},
 		{
-			name:     "missing tenant id",
-			metadata: map[string]string{},
-			method:   "/some.Service/Method",
-			wantErr:  true,
+			name:       "missing tenant id",
+			metadata:   map[string]string{},
+			method:     "/some.Service/Method",
+			wantErr:    true,
 			wantErrCode: codes.Unauthenticated,
 		},
 		{
-			name:     "bootstrap allowed for specific method",
-			metadata: map[string]string{},
-			method:   "/tenant.v1.TenantService/Bootstrap",
-			wantErr:  false,
+			name:       "bootstrap allowed for specific method",
+			metadata:   map[string]string{},
+			method:     "/tenant.v1.TenantService/Bootstrap",
+			wantErr:    false,
 		},
 		{
-			name:     "missing metadata",
-			metadata: nil,
-			method:   "/some.Service/Method",
-			wantErr:  true,
+			name:       "missing metadata",
+			metadata:   nil,
+			method:     "/some.Service/Method",
+			wantErr:    true,
 			wantErrCode: codes.Unauthenticated,
 		},
 	}
@@ -69,7 +68,7 @@ func TestTenantInterceptor(t *testing.T) {
 			}
 
 			interceptor := TenantInterceptor()
-			
+
 			handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 				return nil, nil
 			}
@@ -108,23 +107,23 @@ func TestStreamTenantInterceptor(t *testing.T) {
 		wantErrCode codes.Code
 	}{
 		{
-			name:     "valid tenant",
-			metadata: map[string]string{"x-tenant-id": "tenant-123"},
-			method:   "/some.Service/Method",
-			wantErr:  false,
+			name:       "valid tenant",
+			metadata:   map[string]string{"x-tenant-id": "tenant-123"},
+			method:     "/some.Service/Method",
+			wantErr:    false,
 		},
 		{
-			name:     "missing tenant id",
-			metadata: map[string]string{},
-			method:   "/some.Service/Method",
-			wantErr:  true,
+			name:       "missing tenant id",
+			metadata:   map[string]string{},
+			method:     "/some.Service/Method",
+			wantErr:    true,
 			wantErrCode: codes.Unauthenticated,
 		},
 		{
-			name:     "bootstrap allowed for specific method",
-			metadata: map[string]string{},
-			method:   "/tenant.v1.TenantService/Bootstrap",
-			wantErr:  false,
+			name:       "bootstrap allowed for specific method",
+			metadata:   map[string]string{},
+			method:     "/tenant.v1.TenantService/Bootstrap",
+			wantErr:    false,
 		},
 	}
 
