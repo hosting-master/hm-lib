@@ -99,9 +99,9 @@ func TestValidatePasswordStrength(t *testing.T) {
 			wantErr:  ErrPasswordMissingSpecial,
 		},
 		{
-			name:     "invalid characters",
+			name:     "contains null byte",
 			password: "ValidPass123!\x00", // Null byte
-			wantErr:  ErrPasswordInvalidCharacters,
+			wantErr:  ErrPasswordContainsNullByte,
 		},
 		{
 			name:     "valid with all special chars",

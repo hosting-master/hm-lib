@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"hostingmaster.io/hm-lib/jwt"
-	tenant "hostingmaster.io/hm-lib/tenants"
 )
 
 const successResult = "success"
@@ -72,13 +71,9 @@ func TestAuthInterceptor_ValidToken(t *testing.T) {
 	interceptor := AuthInterceptor(validator)
 
 	// Create a test handler
+	// Note: Per ADR-0012 Phase 1, tenant is NOT set from JWT claims.
+	// Tenant must be set separately via TenantInterceptor.
 	handler := func(ctx context.Context, req any) (any, error) {
-		// Verify tenant context is set
-		tenantID := tenant.GetTenant(ctx)
-		if tenantID != "tenant-456" {
-			return nil, status.Errorf(codes.Internal, "expected tenant %q, got %q", "tenant-456", tenantID)
-		}
-
 		return successResult, nil
 	}
 
@@ -230,50 +225,5 @@ func TestExtractTokenFromMetadata(t *testing.T) {
 				t.Errorf("extractTokenFromMetadata() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestCombineInterceptors(t *testing.T) {
-	t.Parallel()
-
-	// Create two simple interceptors
-	interceptor1 := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		// Add marker to context
-		ctx = context.WithValue(ctx, "marker1", "value1") //nolint:staticcheck
-
-		return handler(ctx, req)
-	}
-
-	interceptor2 := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		// Add another marker
-		ctx = context.WithValue(ctx, "marker2", "value2") //nolint:staticcheck
-
-		return handler(ctx, req)
-	}
-
-	combined := CombineInterceptors(interceptor1, interceptor2)
-
-	handler := func(ctx context.Context, req any) (any, error) {
-		// Verify both markers are present
-		if ctx.Value("marker1") == nil {
-			return nil, status.Error(codes.Internal, "marker1 not set")
-		}
-
-		if ctx.Value("marker2") == nil {
-			return nil, status.Error(codes.Internal, "marker2 not set")
-		}
-
-		return successResult, nil
-	}
-
-	ctx := context.Background()
-
-	result, err := combined(ctx, "test-request", &grpc.UnaryServerInfo{FullMethod: "/test"}, handler)
-	if err != nil {
-		t.Errorf("Combined interceptors error = %v", err)
-	}
-
-	if result != successResult {
-		t.Errorf("Combined interceptors result = %v, want %v", result, successResult)
 	}
 }

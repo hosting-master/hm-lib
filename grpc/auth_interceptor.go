@@ -14,7 +14,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"hostingmaster.io/hm-lib/jwt"
-	tenant "hostingmaster.io/hm-lib/tenants"
 )
 
 // AuthInterceptor returns a gRPC unary server interceptor that validates JWT tokens
@@ -29,14 +28,14 @@ func AuthInterceptor(validator jwt.Validator) grpc.UnaryServerInterceptor {
 			return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 		}
 
-		// Validate token
-		claims, err := validator.ValidateToken(token)
+		// Validate token (claims are validated but not used per ADR-0012 Phase 1)
+		_, err = validator.ValidateToken(token)
 		if err != nil {
 			return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 		}
 
-		// Set tenant context (from JWT claims)
-		ctx = tenant.WithTenant(ctx, claims.TenantID)
+		// Note: Per ADR-0012 Phase 1, JWT contains no tenant information.
+		// Tenant context must be set separately via TenantInterceptor.
 
 		return handler(ctx, req)
 	}
@@ -52,19 +51,19 @@ func StreamAuthInterceptor(validator jwt.Validator) grpc.StreamServerInterceptor
 			return status.Error(codes.Unauthenticated, "unauthenticated")
 		}
 
-		// Validate token
-		claims, err := validator.ValidateToken(token)
+		// Validate token (claims are validated but not used per ADR-0012 Phase 1)
+		_, err = validator.ValidateToken(token)
 		if err != nil {
 			return status.Error(codes.Unauthenticated, "unauthenticated")
 		}
 
-		// Set tenant context
-		ctx := tenant.WithTenant(serverStream.Context(), claims.TenantID)
+		// Note: Per ADR-0012 Phase 1, JWT contains no tenant information.
+		// Tenant context must be set separately via StreamTenantInterceptor.
 
-		// Wrap the server stream with the new context
-		wrappedStream := &tenantAwareStream{
+		// Wrap the server stream with the existing context
+		wrappedStream := &tenantAwareServerStream{
 			ServerStream: serverStream,
-			ctx:          ctx,
+			ctx:          serverStream.Context(),
 		}
 
 		return handler(srv, wrappedStream)
@@ -117,42 +116,9 @@ func extractTokenFromMetadata(ctx context.Context) (string, error) {
 	return token, nil
 }
 
-// tenantAwareStream wraps a ServerStream to provide context with tenant ID.
-// This is used by StreamAuthInterceptor to propagate tenant context.
-type tenantAwareStream struct {
-	grpc.ServerStream
-
-	// Required to store context in the stream wrapper for gRPC
-	ctx context.Context //nolint:containedctx
-}
-
-// Context returns the context with tenant ID.
-func (s *tenantAwareStream) Context() context.Context {
-	return s.ctx
-}
-
 // UnaryAuthInterceptorWithTenantOnly returns a simpler interceptor that only sets tenant context
 // from the x-tenant-id metadata (for services that don't need JWT auth).
 // This is the existing TenantInterceptor renamed for clarity.
 func UnaryAuthInterceptorWithTenantOnly() grpc.UnaryServerInterceptor {
 	return TenantInterceptor()
-}
-
-// CombineInterceptors combines multiple unary interceptors into one.
-// The interceptors are executed in the order they are provided.
-func CombineInterceptors(interceptors ...grpc.UnaryServerInterceptor) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		// Build the chain from right to left (last interceptor wraps the handler first)
-		combined := handler
-
-		for i := len(interceptors) - 1; i >= 0; i-- {
-			interceptor := interceptors[i]
-			prevHandler := combined
-			combined = func(ctx context.Context, req any) (any, error) {
-				return interceptor(ctx, req, info, prevHandler)
-			}
-		}
-
-		return combined(ctx, req)
-	}
 }

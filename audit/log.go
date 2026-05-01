@@ -45,8 +45,8 @@ const (
 	StatusStarted Status = "STARTED"
 )
 
-// AuditLogEntry represents a single audit log entry.
-type AuditLogEntry struct {
+// LogEntry represents a single audit log entry.
+type LogEntry struct {
 	// Timestamp is when the event occurred.
 	Timestamp time.Time `json:"timestamp" bson:"timestamp"`
 	// TenantID is the tenant context for the event.
@@ -82,7 +82,7 @@ type AuditLogEntry struct {
 type Logger interface {
 	// Log records an audit log entry asynchronously.
 	// Implementations MUST NOT block the calling goroutine.
-	Log(ctx context.Context, entry AuditLogEntry) error
+	Log(ctx context.Context, entry LogEntry) error
 	// LogWithContext is a convenience method that extracts tenant and user info from context.
 	// If tenant or user info is not available in context, it should still log with available info.
 	// Implementations MUST NOT block the calling goroutine.
@@ -93,12 +93,12 @@ type Logger interface {
 type NoOpLogger struct{}
 
 // Log implements Logger interface - does nothing.
-func (n *NoOpLogger) Log(ctx context.Context, entry AuditLogEntry) error {
+func (*NoOpLogger) Log(_ context.Context, _ LogEntry) error {
 	return nil
 }
 
 // LogWithContext implements Logger interface - does nothing.
-func (n *NoOpLogger) LogWithContext(ctx context.Context, action Action, status Status, details map[string]any) error {
+func (*NoOpLogger) LogWithContext(_ context.Context, _ Action, _ Status, _ map[string]any) error {
 	return nil
 }
 

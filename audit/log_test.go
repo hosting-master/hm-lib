@@ -9,7 +9,7 @@ func TestNoOpLogger_Log(t *testing.T) {
 	t.Parallel()
 
 	logger := &NoOpLogger{}
-	entry := AuditLogEntry{
+	entry := LogEntry{
 		Action:   ActionCreate,
 		Status:   StatusSuccess,
 		TenantID: "tenant-123",
@@ -62,10 +62,10 @@ func TestFromContext_NoLogger(t *testing.T) {
 	}
 }
 
-func TestAuditLogEntry_Fields(t *testing.T) {
+func TestLogEntry_Fields(t *testing.T) {
 	t.Parallel()
 
-	entry := AuditLogEntry{
+	entry := LogEntry{
 		Action:       ActionCreate,
 		Status:       StatusSuccess,
 		TenantID:     "tenant-123",

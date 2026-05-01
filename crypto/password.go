@@ -6,7 +6,7 @@ package crypto
 import (
 	"errors"
 	"fmt"
-	"regexp"
+	"unicode"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -26,8 +26,8 @@ var ErrPasswordMissingDigit = errors.New("password missing digit")
 // ErrPasswordMissingSpecial is returned when password is missing special characters.
 var ErrPasswordMissingSpecial = errors.New("password missing special character")
 
-// ErrPasswordInvalidCharacters is returned when password contains invalid characters.
-var ErrPasswordInvalidCharacters = errors.New("password contains invalid characters")
+// ErrPasswordContainsNullByte is returned when password contains null bytes.
+var ErrPasswordContainsNullByte = errors.New("password contains null byte")
 
 // DefaultBcryptCost is the minimum cost factor for bcrypt as per ADR-0012.
 // Cost of 12 means 2^12 iterations (4096), which is the recommended minimum.
@@ -88,7 +88,7 @@ func ValidatePasswordStrength(password string) error {
 	}
 
 	if !validCharacters(password) {
-		return ErrPasswordInvalidCharacters
+		return ErrPasswordContainsNullByte
 	}
 
 	return nil
@@ -96,7 +96,7 @@ func ValidatePasswordStrength(password string) error {
 
 func hasUppercase(s string) bool {
 	for _, c := range s {
-		if c >= 'A' && c <= 'Z' {
+		if unicode.IsUpper(c) {
 			return true
 		}
 	}
@@ -106,7 +106,7 @@ func hasUppercase(s string) bool {
 
 func hasLowercase(s string) bool {
 	for _, c := range s {
-		if c >= 'a' && c <= 'z' {
+		if unicode.IsLower(c) {
 			return true
 		}
 	}
@@ -116,7 +116,7 @@ func hasLowercase(s string) bool {
 
 func hasDigit(s string) bool {
 	for _, c := range s {
-		if c >= '0' && c <= '9' {
+		if unicode.IsDigit(c) {
 			return true
 		}
 	}
@@ -125,14 +125,22 @@ func hasDigit(s string) bool {
 }
 
 func hasSpecial(s string) bool {
-	specialChars := regexp.MustCompile(`[!@#$%^&*()\-+=\[\]{};:'",.<>/?\\|~]`)
+	for _, c := range s {
+		if unicode.IsPunct(c) || unicode.IsSymbol(c) {
+			return true
+		}
+	}
 
-	return specialChars.MatchString(s)
+	return false
 }
 
 func validCharacters(s string) bool {
-	// Allow alphanumeric, spaces, and common special characters
-	validCharRegex := regexp.MustCompile(`^[a-zA-Z0-9 !@#$%^&*()\-+=\[\]{};:'",.<>/?\\|~\s]+$`)
+	// Check for null bytes which are never allowed
+	for _, c := range s {
+		if c == '\x00' {
+			return false
+		}
+	}
 
-	return validCharRegex.MatchString(s)
+	return true
 }

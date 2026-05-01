@@ -182,13 +182,18 @@ func (kb *KeyBuilder) ForTenant(tenantID string) string {
 
 // ForCombined creates a key combining multiple identifiers.
 func (kb *KeyBuilder) ForCombined(parts ...string) string {
+	if len(parts) == 0 {
+		return kb.prefix
+	}
+
 	var buf strings.Builder
 	buf.WriteString(kb.prefix)
 	buf.WriteString(":")
+	buf.WriteString(parts[0])
 
-	for _, part := range parts {
-		buf.WriteString(part)
+	for _, part := range parts[1:] {
 		buf.WriteString(":")
+		buf.WriteString(part)
 	}
 
 	return buf.String()

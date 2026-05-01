@@ -174,7 +174,7 @@ func TestKeyBuilder_ForCombined(t *testing.T) {
 	kb := NewKeyBuilder("rate")
 	key := kb.ForCombined("ip", "192.168.1.1", "user", "user-123")
 
-	expected := "rate:ip:192.168.1.1:user:user-123:"
+	expected := "rate:ip:192.168.1.1:user:user-123"
 	if key != expected {
 		t.Errorf("ForCombined() = %v, want %v", key, expected)
 	}
