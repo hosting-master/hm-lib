@@ -1,11 +1,9 @@
 version: "2"
-
 run:
   allow-parallel-runners: true
   timeout: 5m
   issues-exit-code: 1
   tests: true
-
 linters:
   enable:
     - asasalint
@@ -125,6 +123,24 @@ linters:
           # List of allowed packages.
           allow:
             - $gostd
+            - github.com/golang-jwt/jwt/v5
+            - github.com/stretchr/testify
+            - github.com/stretchr/testify/assert
+            - github.com/stretchr/testify/require
+            - golang.org/x/crypto/bcrypt
+            - golang.org/x/exp/slices
+            - google.golang.org/grpc
+            - google.golang.org/grpc/codes
+            - google.golang.org/grpc/metadata
+            - google.golang.org/grpc/peer
+            - google.golang.org/grpc/status
+            - hostingmaster.io/hm-lib
+            - hostingmaster.io/hm-lib/audit
+            - hostingmaster.io/hm-lib/crypto
+            - hostingmaster.io/hm-lib/grpc
+            - hostingmaster.io/hm-lib/jwt
+            - hostingmaster.io/hm-lib/rate
+            - hostingmaster.io/hm-lib/tenants
           deny:
             - pkg: "math/rand$"
               desc: use math/rand/v2
@@ -189,6 +205,12 @@ linters:
         - tc
         - ok
         - v
+        - c
+        - kb
+        - l
+        - n
+        - s
+        - wg
       ignore-decls:
         - c *gin.Context
         - c *Config

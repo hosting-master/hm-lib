@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"hostingmaster.io/hm-lib/tenants"
+	tenant "hostingmaster.io/hm-lib/tenants"
 )
 
 const (
@@ -22,17 +22,17 @@ const (
 func TenantInterceptor() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
-		req interface{},
+		req any,
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
-	) (interface{}, error) {
-		md, ok := metadata.FromIncomingContext(ctx)
+	) (any, error) {
+		metadata, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			return nil, status.Error(codes.Unauthenticated, "missing metadata")
 		}
 
 		// Extract tenant ID from headers
-		tenantIDs := md.Get(TenantIDHeader)
+		tenantIDs := metadata.Get(TenantIDHeader)
 		if len(tenantIDs) == 0 {
 			// Bootstrap allowed only for specific methods
 			if info.FullMethod == "/tenant.v1.TenantService/Bootstrap" {
@@ -51,20 +51,20 @@ func TenantInterceptor() grpc.UnaryServerInterceptor {
 // StreamTenantInterceptor adds tenant ID from metadata to context for stream RPCs.
 func StreamTenantInterceptor() grpc.StreamServerInterceptor {
 	return func(
-		srv interface{},
-		ss grpc.ServerStream,
+		srv any,
+		serverStream grpc.ServerStream,
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
 	) error {
-		ctx := ss.Context()
+		ctx := serverStream.Context()
 
-		md, ok := metadata.FromIncomingContext(ctx)
+		metadata, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			return status.Error(codes.Unauthenticated, "missing metadata")
 		}
 
 		// Extract tenant ID from headers
-		tenantIDs := md.Get(TenantIDHeader)
+		tenantIDs := metadata.Get(TenantIDHeader)
 		if len(tenantIDs) == 0 {
 			// Bootstrap allowed only for specific methods
 			if info.FullMethod == "/tenant.v1.TenantService/Bootstrap" {
@@ -78,8 +78,8 @@ func StreamTenantInterceptor() grpc.StreamServerInterceptor {
 
 		// Create wrapped server stream with updated context
 		wrappedStream := &tenantAwareServerStream{
-			ServerStream: ss,
-			ctx:         ctx,
+			ServerStream: serverStream,
+			ctx:          ctx,
 		}
 
 		return handler(srv, wrappedStream)
@@ -89,10 +89,12 @@ func StreamTenantInterceptor() grpc.StreamServerInterceptor {
 // tenantAwareServerStream wraps ServerStream to provide context with tenant ID.
 type tenantAwareServerStream struct {
 	grpc.ServerStream
-	ctx context.Context
+
+	// Required to store context in the stream wrapper for gRPC
+	ctx context.Context //nolint:containedctx
 }
 
 // Context returns the updated context with tenant ID.
-func (ss *tenantAwareServerStream) Context() context.Context {
-	return ss.ctx
+func (s *tenantAwareServerStream) Context() context.Context {
+	return s.ctx
 }
