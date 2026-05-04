@@ -2,7 +2,7 @@ module hostingmaster.io/hm-lib
 
 go 1.26
 
-require google.golang.org/grpc v1.80.0
+require google.golang.org/grpc v1.81.0
 
 require (
 	golang.org/x/net v0.53.0 // indirect
